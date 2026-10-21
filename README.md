@@ -19,7 +19,8 @@ per-character input slots - this mod fills them again.
 - **Semi-Auto / Auto tab for every party member** in the Skills menu (the game normally shows it only for the leader).
 - **Control modes stay set after battles** (the game used to reset them to Auto).
 - **Per-player rumble:** each player's controller rumbles for their own character's hits, like the PS1.
-- **Safe on game updates:** if the game's code changes, the mod switches itself off and the game runs unmodified.
+- **Safe on game updates and with other mods:** before changing anything, each feature checks the game code it
+  needs. If a game update or another mod changed that code, only that feature stays off - nothing is half-applied.
 - Small "Eternia Co-op" label in the top-right corner of the main menu while the mod is running (hidden in game).
 
 ## Screenshots
@@ -49,7 +50,7 @@ per-character input slots - this mod fills them again.
 
 1. Extract the zip into the game folder (Steam → right-click the game → Manage → Browse local files), so that
    `winhttp.dll` and the `BepInEx` folder sit next to `Tales of Eternia Remastered.exe`.
-2. Start the game. "Eternia Co-op 1.1.0" appears in the top-right corner of the main menu.
+2. Start the game. "Eternia Co-op 1.1.1" appears in the top-right corner of the main menu.
 3. Connect controllers. Player 1 keeps the keyboard and the first controller; controllers 2–4 become players 2–4.
    To change who is who, open the controller manager (below).
 
@@ -93,6 +94,7 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |
 | `ShowWatermark` | true | The corner label on the main menu. |
+| `StrictVersionCheck` | false | Stay off completely unless the game file is exactly the supported build (otherwise only features whose game code changed are turned off). |
 
 ## Known limitations
 
@@ -105,8 +107,10 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 
 ## Troubleshooting
 
-- **Label says "off: game version not supported"** - the game was updated. Wait for a mod update.
-  (`AllowUnknownGameVersion = true` tries anyway, at your own risk.)
+- **Label says "partly on (off: ...)"** - a game update or another mod changed the code those features need, so
+  they were left off; everything else works. `BepInEx\LogOutput.log` lists exactly what differed.
+- **Label says "off: game code not recognized"** - the game was updated in a way the mod can't handle yet. Wait for
+  a mod update; the game runs unmodified until then.
 - **No label at all** - BepInEx isn't loading. Check that `winhttp.dll` is next to the game's .exe and that your
   antivirus didn't remove it. `BepInEx\LogOutput.log` shows what happened.
 - **Player 2's character stands still** - that slot is on Semi-Auto but player 2 has no controller assigned.

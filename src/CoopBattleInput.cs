@@ -13,8 +13,6 @@ namespace EterniaCoop
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void BattleCmdFn(IntPtr padHeld);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void PadBuildFn(IntPtr pad, byte rate, int flag);
 
-        static readonly byte[] Prologue = { 0x48, 0x89, 0x5C, 0x24, 0x08 };   // mov [rsp+8], rbx (both functions)
-
         static MonoMod.RuntimeDetour.NativeDetour detour;
         static BattleCmdFn original, hook;   // the hook delegate must stay referenced while native code can call it
         static PadBuildFn buildPad;
@@ -22,11 +20,10 @@ namespace EterniaCoop
         static IntPtr savedPad, savedCmd;
         static bool inHook;
 
+        // Features.CoopBattle has checked both functions and the addresses this uses.
         public static void Install()
         {
             if (detour != null || Native.Base == 0) return;
-            if (!Native.Matches(Rva.BattleCommands, Prologue) || !Native.Matches(Rva.BuildPad, Prologue))
-            { Plugin.Log.LogError("Co-op battle input: unexpected code, not hooked"); return; }
 
             for (int p = 0; p < 4; p++)
             {

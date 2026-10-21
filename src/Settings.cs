@@ -13,7 +13,7 @@ namespace EterniaCoop
         // [Display]
         public static ConfigEntry<bool> ShowWatermark;
         // [Advanced]
-        public static ConfigEntry<bool> ScaleRemapBuffer, HelpersPlayer0Only, AllowUnknownGameVersion;
+        public static ConfigEntry<bool> ScaleRemapBuffer, HelpersPlayer0Only, StrictVersionCheck;
 
         public static void Bind(ConfigFile c)
         {
@@ -54,9 +54,9 @@ namespace EterniaCoop
                 "Grow GameNative's per-player remap table with the player count. Must stay on: the load menu crashes otherwise.");
             HelpersPlayer0Only = c.Bind("Advanced", "HelpersPlayer0Only", true,
                 "Run GameNative's per-player button-latch helpers for player 1 only. Fixes the spinning camera.");
-            AllowUnknownGameVersion = c.Bind("Advanced", "AllowUnknownGameVersion", false,
-                "Try to run on a GameNative.dll this mod version wasn't made for. Each patch still checks its bytes first, " +
-                "but untested game versions can misbehave.");
+            StrictVersionCheck = c.Bind("Advanced", "StrictVersionCheck", false,
+                "Stay off completely unless GameNative.dll is exactly the build this mod was made for. When off (default), " +
+                "a game update or another mod that changed GameNative.dll only turns off the features whose game code changed.");
         }
     }
 }

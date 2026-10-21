@@ -1,5 +1,5 @@
-// Code patches inside GameNative.dll. Every patch checks the exact original bytes first and is skipped
-// (with a log line) if they differ, so a game update can't be half-patched.
+// Code patches inside GameNative.dll. Features.Check has already verified every site of a feature before any of
+// it is applied; each patch also re-checks its exact original bytes and is skipped (with a log line) if they differ.
 using System;
 using System.Runtime.InteropServices;
 
@@ -37,7 +37,7 @@ namespace EterniaCoop
         // Called from UgxInputManager.Initialize, which GameNative's input setup calls before writing its player count.
         public static void Apply(int players)
         {
-            if (applied || Native.Base == 0) return;
+            if (applied || Native.Base == 0 || !Features.Core) return;
             applied = true;
 
             foreach (var i in PlayerCountImms)
@@ -62,14 +62,14 @@ namespace EterniaCoop
 
             // The battle-results code (FUN_84210) writes 0 (Auto) into party slots 2-4's control mode after every
             // battle: "mov byte [0x11CAD39/3A/3B], 0". Each 7-byte store becomes a 7-byte NOP.
-            if (Settings.KeepSlotModesAfterBattle.Value)
+            if (Settings.KeepSlotModesAfterBattle.Value && Features.KeepModes)
             {
                 Native.Patch(0x84C91, new byte[] { 0xC6, 0x05, 0xA1, 0x60, 0x14, 0x01, 0x00 }, Nop7);
                 Native.Patch(0x84D31, new byte[] { 0xC6, 0x05, 0x02, 0x60, 0x14, 0x01, 0x00 }, Nop7);
                 Native.Patch(0x84DD1, new byte[] { 0xC6, 0x05, 0x63, 0x5F, 0x14, 0x01, 0x00 }, Nop7);
             }
 
-            if (Settings.MenuModeTabForAll.Value) ApplyMenuTab();
+            if (Settings.MenuModeTabForAll.Value && Features.MenuTab) ApplyMenuTab();
             Plugin.Log.LogMessage("GameNative input now handles " + players + " players.");
         }
 

@@ -1,8 +1,15 @@
-## Eternia Co-op 1.1.0
+## Eternia Co-op 1.1.1
 
 Local 2–4 player co-op for **Tales of Eternia Remastered** - each controller drives its own party member in battle, like the PS1 original's multitap mode.
 
-**Download `EterniaCoop-1.1.0.zip`** below and extract it into the game folder (next to `Tales of Eternia Remastered.exe`). BepInEx is included.
+**Download `EterniaCoop-1.1.1.zip`** below and extract it into the game folder (next to `Tales of Eternia Remastered.exe`). BepInEx is included. Updating from 1.1.0: extract over the old files.
+
+### What's new
+- **Works alongside other mods.** 1.1.0 switched itself off completely if anything had changed the game's code file. Now each feature (co-op players, battle input, rumble, Skills menu tab, keeping modes after battle) checks every bit of game code it uses and only stays off if that code was changed - everything else keeps working. No feature can end up half-applied.
+- The main-menu label tells you if some features are off; `BepInEx\LogOutput.log` says exactly why.
+- New `StrictVersionCheck` setting for the old all-or-nothing behavior (replaces `AllowUnknownGameVersion`).
+
+Thanks to the Reddit commenter who asked for this!
 
 ### Features
 - Up to 4 players in battle; player 1 controls the leader as usual.
@@ -11,15 +18,11 @@ Local 2–4 player co-op for **Tales of Eternia Remastered** - each controller d
 - Semi-Auto/Auto tab in the Skills menu for every party member; modes stay set after battles.
 - Per-player rumble.
 - Works over Parsec (guests' controllers become players 2–4).
-- Safe on game updates: switches itself off if the game's code changes.
 
 ### Safety
 No internet access, telemetry or tracking. No game files are modified (all changes are in memory). Full source in this repository.
 
-### Tested
-2 players (controller + keyboard). 3–4 players and Parsec are expected to work but haven't had wide testing yet - reports welcome in [Issues](https://github.com/thewhitejesus/EterniaCoop/issues).
-
-See the [README](https://github.com/thewhitejesus/EterniaCoop#readme) for settings and troubleshooting, and the [CHANGELOG](https://github.com/thewhitejesus/EterniaCoop/blob/main/CHANGELOG.md) for changes.
+See the [README](https://github.com/thewhitejesus/EterniaCoop#readme) for settings and troubleshooting, and the [CHANGELOG](https://github.com/thewhitejesus/EterniaCoop/blob/main/CHANGELOG.md) for all changes.
 
 ### License and credits
 MIT - free to share, modify, fork and include in modpacks; keep the license and credits.

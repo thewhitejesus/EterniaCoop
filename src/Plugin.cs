@@ -10,7 +10,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.1.0";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.1.1";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -24,7 +24,7 @@ namespace EterniaCoop
 #if COOP_DEBUG
             ResearchTools.Bind(Config);
 #endif
-            Compatibility.Check(Settings.AllowUnknownGameVersion.Value);
+            Compatibility.Check(Settings.StrictVersionCheck.Value);
             Players.LoadManual(Settings.DeviceAssignments.Value);
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
             Log.LogInfo(Name + " " + Version + (Compatibility.Ok ? "" : " (inactive: " + Compatibility.Problem + ")") +
@@ -64,7 +64,7 @@ namespace EterniaCoop
             text += " DEBUG";
 #endif
             if (Compatibility.Problem != null) text += " - " + Compatibility.Problem;
-            else if (Settings.AutoAssignControllers.Value) text += "  ·  " + ControllerManager.OpenKey() + ": controllers";
+            if (CoopActive && Settings.AutoAssignControllers.Value) text += "  ·  " + ControllerManager.OpenKey() + ": controllers";
             // Margin in proportion to the window: the visible area can be a little narrower than Screen.width.
             float margin = Screen.width * 0.03f;
             var r = new Rect(Screen.width - margin - 600, Screen.height * 0.012f, 600, watermarkStyle.fontSize * 2);

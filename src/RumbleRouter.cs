@@ -15,16 +15,14 @@ namespace EterniaCoop
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         delegate void HitFn(int type, uint flags, IntPtr hit, IntPtr attacker, IntPtr victim);
 
-        static readonly byte[] Prologue = { 0x40, 0x53, 0x56, 0x57, 0x41, 0x56 };   // push rbx/rsi/rdi/r14
-
         static MonoMod.RuntimeDetour.NativeDetour detour;
         static HitFn original, hook;
         static readonly float[] pending = new float[4], until = new float[4];
 
+        // Features.Rumble has checked the function and the addresses this uses.
         public static void Install()
         {
             if (detour != null || Native.Base == 0) return;
-            if (!Native.Matches(Rva.ApplyHit, Prologue)) { Plugin.Log.LogError("Per-player rumble: unexpected code, not hooked"); return; }
             hook = Hook;
             detour = new MonoMod.RuntimeDetour.NativeDetour(Native.At(Rva.ApplyHit), Marshal.GetFunctionPointerForDelegate(hook));
             original = detour.GenerateTrampoline<HitFn>();

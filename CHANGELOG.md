@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1 - 2026-10-21
+- Works with other mods that change the game's code, and with small game updates. Instead of switching off whenever
+  `GameNative.dll` differs from the supported build, each feature (co-op players, battle input, rumble, Skills menu
+  tab, keeping modes after battle) checks every piece of game code it uses and turns on only if all of it is
+  unchanged. Features are all-or-nothing, so none can end up half-applied. The main-menu label says which are off.
+- `StrictVersionCheck` setting brings back the old behavior (stay off unless the game file is exactly the supported
+  build). It replaces `AllowUnknownGameVersion`.
+
 ## 1.1.0 - 2026-10-20
 - Controller manager: press F1 (or hold L3 + R3 on any controller) to choose which device controls which player.
   Controllers use LB/RB or the D-pad, the keyboard uses the arrow keys; choices are saved per device.

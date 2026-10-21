@@ -57,7 +57,7 @@ deliberately left locked.
 | Device assignment | `Players.cs` | Once a second: `SetInputDevices` on each `UgxInputPlayer` (keyboard+mouse to `KeyboardPlayer`, controllers in deviceId order). Players without a device get zeroed input (`InputPatches.cs`) - otherwise an empty device list listens to every device and mirrors player 1. |
 | Slot modes follow controllers | `SlotModes.cs` | Writes `JoinMode`/0 to `0x11CAD38+slot` when a player gains/loses a device or the party changes (save load). Menu choices in between are left alone. |
 | Per-player rumble | `RumbleRouter.cs` | Detour on `FUN_8E320(type, flags, hit, attacker, victim)`. The game requests rumble (`0x862E72` frames, `0x862E78` strength) when the attacker - else the victim - is a party member and rumble is enabled. If that actor is player 2-4's, cancel the player-1 request and call `UgxInputManager.SetVibration(strength, player)` / `StopVibration` from `Update`. |
-| Compatibility check | `Compatibility.cs` | SHA-256 of `GameNative.dll` must equal `KnownSha256`, else nothing is patched. Every patch also verifies its exact original bytes (`Native.Patch` / `Native.Matches`). |
+| Compatibility check | `Compatibility.cs`, `Features.cs` | SHA-256 of `GameNative.dll` vs `KnownSha256` only decides the label (and, with `StrictVersionCheck`, whether to stay off). The real gate is `Features.Check`, run in the `Initialize` prefix before anything is patched: each feature (Core, KeepModes, MenuTab, CoopBattle, Rumble) lists every instruction it patches or hooks plus one RIP-relative instruction per data address it uses, and is on only if all match. Everything needs Core. `Native.Patch` still re-checks each site. |
 | Watermark | `Plugin.cs` | IMGUI label, top-right, main menu only: hidden while the area id at `0x11CAFC4` is non-zero (it is 0 on the title screen; the party list is *not* empty there - it holds Reid). |
 
 ## Source layout
@@ -67,7 +67,8 @@ src/
   Plugin.cs           BepInEx entry, per-frame loop, watermark
   Settings.cs         all config entries
   Native.cs           Rva (every address), Actor (field offsets), Native (module base, safe patching)
-  Compatibility.cs    GameNative.dll fingerprint
+  Compatibility.cs    GameNative.dll fingerprint, watermark status text
+  Features.cs         per-feature code signatures: which features are safe to turn on
   Players.cs          device -> player assignment (automatic order + saved manual choices)
   ControllerManager.cs  in-game controller manager panel
   InputPatches.cs     Harmony patches on the C# input layer
@@ -126,15 +127,18 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
   presses mostly worked) even with updateMode = ProcessEventsInDynamicUpdate. Compare `isPressed` with the previous
   Update's value instead (`ControllerManager.Pressed`).
 - **Native hooks may run off the Unity main thread.** Queue work (as `RumbleRouter` does) for `Update`.
+- **Adding a patch, hook or data address? Add its signature to the matching group in `Features.cs`** (for an address,
+  any instruction that reaches it RIP-relative - `gn.py refs`). Otherwise a modified game could get it half-applied.
 - **PowerShell `Set-Content` writes a BOM; BepInEx config tolerates it, other tools might not.**
 
 ## Updating after a game patch
 
-1. The watermark says "off: game version not supported" and the log names the new hash.
-2. In the debug build, the byte checks log every patch site that moved. Re-find each function by its code
-   pattern (the prologues and immediates in `NativePatches.cs` / the hooks are good signatures) with
-   `research/gn.py` or Ghidra (`research/decomp.ps1`), update `Rva` and the patch addresses, then update
-   `Compatibility.KnownSha256`.
+1. The watermark says "partly on (off: ...)" or "off: game code not recognized"; `LogOutput.log` names every
+   signature in `Features.cs` that no longer matches, and the new hash.
+2. Re-find each function by its code pattern (the signatures in `Features.cs` are good search patterns) with
+   `research/gn.py` (`refs` finds the RIP-relative anchors for a data address) or Ghidra (`research/decomp.ps1`).
+   Update `Rva`, the patch addresses in `NativePatches.cs` and the signatures in `Features.cs` together, then
+   update `Compatibility.KnownSha256`.
 3. Retest: menu load (remap crash), field camera (spin), battle with 2+ players, battle end (modes kept), Skills
    menu tab for slot 2, save + reload.
 
