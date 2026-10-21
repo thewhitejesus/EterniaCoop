@@ -1,5 +1,10 @@
 # Eternia Co-op
 
+![Eternia Co-op](release-assets/images/main.png)
+
+**Download:** [latest release](https://github.com/thewhitejesus/EterniaCoop/releases/latest) ·
+[Nexus Mods](https://www.nexusmods.com/talesofeterniaremastered/mods/10)
+
 Local 2–4 player co-op for **Tales of Eternia Remastered** (Steam, PC). Like the PS1 original's multitap mode:
 player 1 controls the leader, and players 2–4 each control another party member in battle.
 
@@ -25,7 +30,7 @@ per-character input slots - this mod fills them again.
 - **Writes only its own settings file** (`BepInEx\config\eterniacoop.cfg`). The only game data it touches is each party
   member's Semi-Auto/Auto setting, which the game saves the same way as when you change it in the menu.
 - **No admin rights, no registry changes, nothing runs in the background** after you close the game.
-- **All source code is public** (MIT license) - see the GitHub repository.
+- **All source code is public** (MIT license) - it's all in this repository.
 - Uses [BepInEx](https://github.com/BepInEx/BepInEx), the standard Unity mod loader. Its `winhttp.dll` is
   occasionally flagged by over-eager antivirus software; it's the same file used by thousands of Unity mods.
 - Single-player game only - there are no online features or anti-cheat involved.
