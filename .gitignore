@@ -1,0 +1,21 @@
+# Build output and release packages
+bin/
+dist/
+
+# Third-party downloads (fetched separately; see package.ps1)
+BepInEx_*.zip
+*.cfg.old-*
+save-backups/
+
+# Reverse-engineering output: decompiled game code must never be published
+research/decomp/
+research/legacy/
+research/*.pkl
+research/__pycache__/
+
+# Editor / OS clutter
+.vs/
+.vscode/
+*.user
+Thumbs.db
+desktop.ini
