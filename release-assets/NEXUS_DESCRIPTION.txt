@@ -25,7 +25,7 @@ SAFE TO USE
 - No internet access, tracking or telemetry
 - Doesn't change any game files. Delete it and the game is back to normal
 - Turns itself off if a game update changes things
-- Open source on GitHub: GITHUB_URL_HERE
+- Open source on GitHub: https://github.com/thewhitejesus/EterniaCoop
 
 KNOWN LIMITATIONS
 - Tested with 2 players. 3-4 players and Parsec should work, feedback welcome!
