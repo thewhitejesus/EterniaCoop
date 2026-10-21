@@ -24,9 +24,13 @@ per-character input slots - this mod fills them again.
 
 ## Screenshots
 
-| Semi-Auto/Auto for every party member | Controller manager (F1 / L3 + R3) |
-|---|---|
-| ![Skills menu with the Semi-Auto tab on Farah](release-assets/images/skills-semi-auto.png) | ![Controller manager](release-assets/images/controller-manager.png) |
+**Semi-Auto/Auto for every party member** (normally only the leader gets this tab):
+
+![Skills menu with the Semi-Auto tab on Farah](release-assets/images/skills-semi-auto.png)
+
+**Controller manager** (F1, or hold L3 + R3):
+
+![Controller manager](release-assets/images/controller-manager.png)
 
 ## What this mod does (and doesn't) do to your PC
 
