@@ -22,6 +22,12 @@ per-character input slots - this mod fills them again.
 - **Safe on game updates:** if the game's code changes, the mod switches itself off and the game runs unmodified.
 - Small "Eternia Co-op" label in the top-right corner of the main menu while the mod is running (hidden in game).
 
+## Screenshots
+
+| Semi-Auto/Auto for every party member | Controller manager (F1 / L3 + R3) |
+|---|---|
+| ![Skills menu with the Semi-Auto tab on Farah](release-assets/images/skills-semi-auto.png) | ![Controller manager](release-assets/images/controller-manager.png) |
+
 ## What this mod does (and doesn't) do to your PC
 
 - **No internet access, telemetry or tracking** of any kind - the mod never opens a network connection.
