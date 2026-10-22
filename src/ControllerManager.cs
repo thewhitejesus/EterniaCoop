@@ -1,5 +1,5 @@
 // In-game controller manager: choose which device controls which player.
-//   Open/close:  Settings.ManagerKey (F1) on the keyboard, or hold Settings.ManagerControllerShortcut (L3+R3) on any
+//   Open/close:  Settings.ManagerKey (F1; F8 when another loaded mod uses F1) on the keyboard, or hold Settings.ManagerControllerShortcut (L3+R3) on any
 //                controller (so Parsec guests can open it); Esc also closes.
 //   Controllers: LB/RB or D-pad left/right move that controller to the previous/next player. Back/Select resets.
 //   Keyboard:    Up/Down pick a row, Left/Right change its player, R resets everything to automatic.
@@ -63,7 +63,26 @@ namespace EterniaCoop
         public static Key OpenKey()
         {
             Key k;
-            return System.Enum.TryParse(Settings.ManagerKey.Value, true, out k) && k != Key.None ? k : Key.F1;
+            if (!System.Enum.TryParse(Settings.ManagerKey.Value, true, out k) || k == Key.None) k = Key.F1;
+            // 100% Drop & Steal Rate (azan22) opens its own menu with F1, so both would open at once.
+            if (k == Key.F1 && KeyTakenBy() != null) k = Key.F8;
+            return k;
+        }
+
+        // Shown wherever the key is: why it isn't F1, or "" when it's the configured key.
+        public static string OpenKeyNote()
+        {
+            string other = OpenKey() == Key.F8 && KeyTakenBy() != null ? KeyTakenBy() : null;
+            return other == null ? "" : " (F1 is used by " + other + ")";
+        }
+
+        // Name of a loaded mod that also uses F1, or null. Checked each time: plugins can load after us.
+        public static string KeyTakenBy()
+        {
+            foreach (var info in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
+                if (info.Location != null && System.IO.Path.GetFileName(info.Location) == "TalesOfEternia_DropStealMod.dll")
+                    return "100% Drop & Steal";
+            return null;
         }
 
         // The configured controller shortcut as display text ("" when disabled).
@@ -223,7 +242,7 @@ namespace EterniaCoop
 
             var devices = Players.Devices();
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
-            float w = u * 36, rowH = u * 2.4f, h = u * 13 + rowH * devices.Count;
+            float w = u * 36, rowH = u * 2.4f, h = u * 13 + rowH * devices.Count + (OpenKeyNote() == "" ? 0 : u * 1.5f);
             var box = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
 
             GUI.color = new Color(0.04f, 0.06f, 0.12f, 0.92f); GUI.DrawTexture(box, white);
@@ -253,7 +272,8 @@ namespace EterniaCoop
             GUI.Label(new Rect(box.x + u, y + u * 0.5f, w - 2 * u, u * 6),
                 "Controller: LB / RB or D-pad to change its player  ·  Back: automatic\n" +
                 "Keyboard: Up / Down select, Left / Right change  ·  R: automatic\n" +
-                "Close: " + OpenKey() + ", Esc" + (ShortcutName() == "" ? "" : ", or hold " + ShortcutName()), hint);
+                "Close: " + OpenKey() + ", Esc" + (ShortcutName() == "" ? "" : ", or hold " + ShortcutName()) +
+                (OpenKeyNote() == "" ? "" : "\nThe controller manager is on " + OpenKey() + OpenKeyNote()), hint);
             if (message != null && Time.unscaledTime < messageUntil)
             {
                 GUI.color = new Color(1f, 0.9f, 0.5f, 1f);

@@ -58,6 +58,7 @@ per-character input slots - this mod fills them again.
 
 Open with **F1**, or hold **L3 + R3** (both sticks pressed in) on any controller - handy for Parsec guests.
 Both shortcuts can be changed in the settings (`ManagerKey`, `ManagerControllerShortcut`).
+With **100% Drop and Steal Rate** installed (it opens its own menu with F1), the key is **F8** instead.
 The game ignores input while it's open.
 
 - **Controller:** LB / RB or D-pad left/right moves *that* controller to the previous/next player. Back resets everything to automatic.
@@ -102,6 +103,8 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 - **Menus, the field and cutscenes are controlled by player 1 only**, as on the PS1. Co-op is for battles.
 - **"Guests from Phantasia" also uses L3 + R3** (its camp-menu toggle). If you use both mods, set
   `ManagerControllerShortcut = LB+RB+Back`. Using both together hasn't been tested yet.
+- **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8). **Uncropped
+  Backgrounds** can't be used with this mod: it needs BepInEx 6, and a game can only run one BepInEx version.
 - **Saved controller choices can swap** if controllers are plugged in a different order - reopen the manager.
 - **A controller shows up twice?** Turn off Steam Input for the game (Steam → game Properties → Controller).
 

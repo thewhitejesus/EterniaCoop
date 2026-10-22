@@ -66,7 +66,7 @@ namespace EterniaCoop
             text += " DEBUG";
 #endif
             if (Compatibility.Problem != null) text += " - " + Compatibility.Problem;
-            if (CoopActive && Settings.AutoAssignControllers.Value) text += "  ·  " + ControllerManager.OpenKey() + ": controllers";
+            if (CoopActive && Settings.AutoAssignControllers.Value) text += "  ·  " + ControllerManager.OpenKey() + ": controllers" + ControllerManager.OpenKeyNote();
             // Margin in proportion to the window: the visible area can be a little narrower than Screen.width.
             float margin = Screen.width * 0.03f;
             float width = Screen.width - 2 * margin;   // status text can be long ("partly on (off: ...)")

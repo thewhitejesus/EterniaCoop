@@ -42,7 +42,8 @@ namespace EterniaCoop
                 "Saved by the in-game controller manager (F1, or hold L3 + R3): device path = player (0-3), separated by ;. " +
                 "Devices not listed follow the automatic order. Clear it to go back to fully automatic.");
             ManagerKey = c.Bind("Coop", "ManagerKey", "F1",
-                "Keyboard key that opens the controller manager (Unity key name, e.g. F1, F2, Insert, Home).");
+                "Keyboard key that opens the controller manager (Unity key name, e.g. F1, F2, Insert, Home). " +
+                "F1 becomes F8 automatically while 100% Drop & Steal Rate is installed, since that mod opens its menu with F1.");
             ManagerControllerShortcut = c.Bind("Coop", "ManagerControllerShortcut", "L3+R3",
                 "Controller buttons to hold for half a second to open the controller manager: L3+R3, LB+RB+Back, Back+Start or None. " +
                 "Use LB+RB+Back with mods that also use L3+R3 (e.g. Guests from Phantasia's camp menu toggle).");

@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Works with **100% Drop and Steal Rate** (tested together): that mod opens its menu with F1, so while it's installed
+  the controller manager opens with **F8** instead. The main-menu label and the manager say so.
 - Co-op stays off unless the game code check has actually confirmed the input code (it could be skipped before
   in theory).
 - The main-menu label uses the full screen width and no longer wraps, so a long "partly on (off: ...)" status fits.
