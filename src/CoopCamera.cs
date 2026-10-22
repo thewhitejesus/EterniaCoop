@@ -29,7 +29,7 @@ namespace EterniaCoop
         static IntPtr stub, active, centre;   // stub data: active (byte), centre x (ushort, world units = 1/16 px)
         static bool installed;
         static long lastActors;
-        static float zoom, x, baseZoom, zoomVel, xVel, lastSpread;
+        static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait;
         static bool tracking;
 
         // Critically damped spring (no overshoot, no snap): moves value toward target, settling in about smoothTime
@@ -148,8 +148,12 @@ namespace EterniaCoop
             float room = halfView - Edge * 16f;
             if (Math.Abs(leaderX - mid) > room) mid = leaderX + (mid > leaderX ? room : -room);
 
-            x = Spring(x, mid, ref xVel, 0.3f);
-            zoom = Spring(zoom, wantZoom, ref zoomVel, 0.45f);
+            // Zoom out promptly (nobody slips off screen), zoom back in slowly and only after the players have stayed
+            // together for a moment - so the camera doesn't breathe in and out with every step.
+            x = Spring(x, mid, ref xVel, 0.35f);
+            if (wantZoom >= zoom - 1f) { zoomInWait = 0.5f; zoom = Spring(zoom, wantZoom, ref zoomVel, 0.4f); }
+            else if (zoomInWait > 0f) { zoomInWait -= 1f / 60f; zoom = Spring(zoom, zoom, ref zoomVel, 0.4f); }
+            else zoom = Spring(zoom, wantZoom, ref zoomVel, 0.9f);
             Marshal.WriteInt16(centre, (short)Math.Round(x));
             Marshal.WriteByte(active, 1);
             Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(zoom));
