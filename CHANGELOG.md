@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 - 2026-10-22
+- **BepInEx 6 mods work alongside co-op.** New, included **BepInEx 6 Bridge**: runs mods built for BepInEx 6 on
+  BepInEx 5, so co-op, 100% Drop and Steal Rate, Uncropped Backgrounds, Fast Shutdown and Font Replacer all run
+  in one install (all tested together, with Guests from Phantasia). It's a separate plugin folder and does nothing
+  when no BepInEx 6 mods are installed. Also released on its own.
+- The main menu's "Also running" line shows friendly names for those mods.
+
 ## 1.1.3 - 2026-10-22
 - **Fixed a soft-lock:** players 2-4 could open the battle menu (Start, or Tab on the keyboard), but the remaster's
   battle menu only takes player 1's input, so they couldn't confirm, cancel or close it (GitHub issue #1). Now every

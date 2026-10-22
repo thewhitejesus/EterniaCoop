@@ -1,6 +1,7 @@
-# Builds the release and makes two zips in dist\:
-#   EterniaCoop-<ver>.zip         extract into the game folder (BepInEx + mod + docs + licenses)
-#   EterniaCoop-<ver>-source.zip  source, build script, research scripts, docs (no decompiled game code)
+# Builds the release and makes three zips in dist\:
+#   EterniaCoop-<ver>.zip               extract into the game folder (BepInEx + mod + BepInEx 6 Bridge + docs + licenses)
+#   BepInEx6Bridge-<bridgever>.zip      the bridge on its own (with BepInEx 5), for players who don't want co-op
+#   EterniaCoop-<ver>-source.zip        source, build scripts, research scripts, docs (no decompiled game code)
 # BepInEx comes from the original, checksum-verified BepInEx download, never from the game folder.
 param([string]$BepInExZip = "$PSScriptRoot\BepInEx_win_x64_5.4.23.5.zip")
 $ErrorActionPreference = "Stop"
@@ -12,12 +13,36 @@ if (-not (Test-Path $BepInExZip)) {
 if ((Get-FileHash $BepInExZip).Hash -ne $bepinexSha) { throw "BepInEx zip checksum mismatch" }
 
 & "$PSScriptRoot\build.ps1" -NoInstall
+& "$PSScriptRoot\bridge\build.ps1" -NoInstall
+$bridgeVersion = ([regex]::Match((Get-Content "$PSScriptRoot\bridge\src\Loader\Bridge.cs" -Raw), 'Version = "([^"]+)"')).Groups[1].Value
 $dist = "$PSScriptRoot\dist"; $stage = "$dist\stage"
 Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $stage | Out-Null
 
+# The bridge as installed: BepInEx\plugins\BepInEx6Bridge\ (plugin, shim\, readme, license)
+function Add-Bridge($root) {
+    $b = "$root\BepInEx\plugins\BepInEx6Bridge"
+    New-Item -ItemType Directory -Force "$b\shim" | Out-Null
+    Copy-Item "$PSScriptRoot\bridge\bin\BepInEx6Bridge.dll" $b
+    Copy-Item "$PSScriptRoot\bridge\bin\shim\*.dll" "$b\shim"
+    Copy-Item "$PSScriptRoot\bridge\README.md" "$b\README.md"
+    Copy-Item "$PSScriptRoot\LICENSE" "$b\LICENSE"
+}
+
+# Bridge-only package
+$bstage = "$dist\bstage"
+Remove-Item $bstage -Recurse -Force -ErrorAction SilentlyContinue
+Expand-Archive $BepInExZip -DestinationPath $bstage
+Add-Bridge $bstage
+Copy-Item "$PSScriptRoot\bridge\README.md" "$bstage\BepInEx6Bridge-README.md"
+$bzip = "$dist\BepInEx6Bridge-$bridgeVersion.zip"
+Remove-Item $bzip -ErrorAction SilentlyContinue
+Compress-Archive "$bstage\*" $bzip
+Remove-Item $bstage -Recurse -Force
+
 # Player package
 Expand-Archive $BepInExZip -DestinationPath $stage
+Add-Bridge $stage
 $plug = "$stage\BepInEx\plugins\EterniaCoop"
 New-Item -ItemType Directory -Force "$plug\licenses" | Out-Null
 Copy-Item "$PSScriptRoot\bin\release\EterniaCoop.dll" $plug
@@ -37,6 +62,9 @@ Copy-Item "$PSScriptRoot\build.ps1","$PSScriptRoot\find-game.ps1","$PSScriptRoot
 Copy-Item "$PSScriptRoot\research\*.py","$PSScriptRoot\research\*.ps1" "$src\research"
 Copy-Item "$PSScriptRoot\research\ghidra_scripts\*.java" "$src\research\ghidra_scripts"
 Copy-Item "$PSScriptRoot\release-assets" "$src\release-assets" -Recurse
+New-Item -ItemType Directory -Force "$src\bridge" | Out-Null
+Copy-Item "$PSScriptRoot\bridge\src" "$src\bridge\src" -Recurse
+Copy-Item "$PSScriptRoot\bridge\build.ps1","$PSScriptRoot\bridge\README.md" "$src\bridge"
 $srcZip = "$dist\EterniaCoop-$version-source.zip"
 Remove-Item $srcZip -ErrorAction SilentlyContinue
 Compress-Archive "$src\*" $srcZip

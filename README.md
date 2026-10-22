@@ -24,6 +24,9 @@ per-character input slots - this mod fills them again.
 - Small "Eternia Co-op" label in the top-right corner of the main menu while the mod is running (hidden in game),
   with the controller-manager key and the other mods running alongside it (BepInEx plugins, Guests from Phantasia,
   ASI mods, ReShade).
+- **Works with BepInEx 6 mods too:** the download includes the **BepInEx 6 Bridge**, which runs mods built for
+  BepInEx 6 (Uncropped Backgrounds, Fast Shutdown, Font Replacer) on this mod's BepInEx 5 - so you don't have to
+  choose between them. Tested with all three, plus 100% Drop and Steal Rate and Guests from Phantasia.
 
 ## Screenshots
 
@@ -52,7 +55,7 @@ per-character input slots - this mod fills them again.
 
 1. Extract the zip into the game folder (Steam → right-click the game → Manage → Browse local files), so that
    `winhttp.dll` and the `BepInEx` folder sit next to `Tales of Eternia Remastered.exe`.
-2. Start the game. "Eternia Co-op 1.1.2" appears in the top-right corner of the main menu.
+2. Start the game. "Eternia Co-op 1.2.0" appears in the top-right corner of the main menu.
 3. Connect controllers. Player 1 keeps the keyboard and the first controller; controllers 2–4 become players 2–4.
    To change who is who, open the controller manager (below).
 
@@ -95,6 +98,21 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
   Not on a Steam Deck, where the built-in controls need it.
 - Windows supports up to 4 Xbox-style controllers at once: the host's plus 3 guests.
 
+## BepInEx 6 mods (the bridge)
+
+Some Tales of Eternia mods are built for BepInEx 6 while this one uses BepInEx 5, and a game runs only one.
+The included **BepInEx 6 Bridge** (`BepInEx\plugins\BepInEx6Bridge\`) runs BepInEx 6 mods on BepInEx 5:
+
+1. Install this mod as usual. **Coming from BepInEx 6?** Extract over it - the game switches to BepInEx 5's loader
+   and your mods and settings stay.
+2. Install the BepInEx 6 mods into `BepInEx\plugins\` as their pages say (only the mod, not BepInEx 6 itself).
+   Font Replacer also needs its font (Font of Eternia) in its folder.
+3. `BepInEx\LogOutput.log` lists each one as "Started BepInEx 6 plugin ...", and the main menu shows them under
+   "Also running".
+
+It's a separate plugin: delete that folder to remove it, and it does nothing when no BepInEx 6 mods are installed.
+Details in [bridge/README.md](bridge/README.md). Also available on its own (`BepInEx6Bridge-<version>.zip`).
+
 ## Settings
 
 `BepInEx\config\eterniacoop.cfg` (created on first start):
@@ -123,8 +141,8 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
   keyboard/mouse act as player 1, so whoever opened it can use and close it.
 - **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
-  so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). **Uncropped
-  Backgrounds** can't be used with this mod: it needs BepInEx 6, and a game can only run one BepInEx version.
+  so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). BepInEx 6 mods (**Uncropped Backgrounds,
+  Fast Shutdown, Font Replacer**) work too, through the included BepInEx 6 Bridge - see below.
 - **Saved controller choices can swap** if controllers are plugged in a different order - reopen the manager.
 - **A controller shows up twice?** Turn off Steam Input for the game (Steam → game Properties → Controller).
 

@@ -15,7 +15,13 @@ namespace EterniaCoop
             { "TalesOfEternia_DropStealMod", "100% Drop & Steal" },
             { "ToE_Guest", "Guests from Phantasia" },
             { "CraymelBall", "EZ Craymel Ball" },
+            { "UncropPlugin", "Uncropped Backgrounds" },
+            { "FontOfEterniaPlugin", "Font Replacer" },
+            { "FastShutdownPlugin", "Fast Shutdown" },
         };
+
+        // Shipped with this mod (BepInEx 6 Bridge): not worth listing as "another mod".
+        const string BridgeGuid = "eterniacoop.bepinex6bridge";
 
         static List<string> names;
         static float nextScan;
@@ -30,7 +36,7 @@ namespace EterniaCoop
             {
                 foreach (var info in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
                 {
-                    if (info.Metadata.GUID == Plugin.Guid) continue;
+                    if (info.Metadata.GUID == Plugin.Guid || info.Metadata.GUID == BridgeGuid) continue;
                     string file = info.Location == null ? "" : Path.GetFileNameWithoutExtension(info.Location);
                     string name;
                     Add(found, ShortNames.TryGetValue(file, out name) ? name : info.Metadata.Name);

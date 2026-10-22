@@ -80,6 +80,11 @@ src/
   SlotModes.cs        menu-side control modes
   RumbleRouter.cs     rumble hook
   Debug/ResearchTools.cs   debug build only (COOP_DEBUG): memory scan, peek/poke, dumps, verbose logs
+bridge/               BepInEx 6 Bridge (separate plugin, shipped in the same zip): runs BepInEx 6 plugins on BepInEx 5.
+  src/Core/           stand-in for BepInEx.Core 6.0 (attributes, config forwarded to BepInEx 5, logging + interpolated handlers)
+  src/UnityMono/      stand-in for BepInEx.Unity.Mono 6.0 (BaseUnityPlugin: Config + Logger from [BepInPlugin])
+  src/Loader/         the BepInEx 5 plugin: resolves those assemblies to the stand-ins, finds and starts BepInEx 6 plugins
+  build.ps1           builds all three (BepInEx 5's BepInEx.dll is referenced under the extern alias BE5)
 build.ps1             csc build (release or -DebugBuild), installs into the game
 research/             analysis scripts (Capstone/pefile, Ghidra headless); decomp output is not shipped
 ```
