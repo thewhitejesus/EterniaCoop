@@ -70,7 +70,9 @@ namespace EterniaCoop
             // Margin in proportion to the window: the visible area can be a little narrower than Screen.width.
             float margin = Screen.width * 0.03f;
             float width = Screen.width - 2 * margin;   // status text can be long ("partly on (off: ...)")
-            var r = new Rect(margin, Screen.height * 0.012f, width, watermarkStyle.fontSize * 2);
+            // 100% Drop & Steal Rate draws a one-line status at the very top right; go below it.
+            float top = Screen.height * (ControllerManager.KeyTakenBy() != null ? 0.032f : 0.012f);
+            var r = new Rect(margin, top, width, watermarkStyle.fontSize * 2);
             GUI.color = new Color(0, 0, 0, 0.5f);
             GUI.Label(new Rect(r.x + 1, r.y + 1, r.width, r.height), text, watermarkStyle);
             GUI.color = Compatibility.Ok ? new Color(1, 1, 1, 0.55f) : new Color(1, 0.55f, 0.45f, 0.85f);
