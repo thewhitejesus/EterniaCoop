@@ -105,7 +105,9 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 - **Menus, the field and cutscenes are controlled by player 1 only**, as on the PS1. Co-op is for battles.
 - **"Guests from Phantasia" also uses L3 + R3** (its camp-menu toggle). If you use both mods, set
   `ManagerControllerShortcut = LB+RB+Back`. Using both together hasn't been tested yet.
-- **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8). **Uncropped
+- **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from
+  Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
+  so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). **Uncropped
   Backgrounds** can't be used with this mod: it needs BepInEx 6, and a game can only run one BepInEx version.
 - **Saved controller choices can swap** if controllers are plugged in a different order - reopen the manager.
 - **A controller shows up twice?** Turn off Steam Input for the game (Steam → game Properties → Controller).
