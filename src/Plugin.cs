@@ -61,42 +61,28 @@ namespace EterniaCoop
 #if COOP_DEBUG
             name += " DEBUG";
 #endif
-            if (ControllerManager.KeyTakenBy() != null) { DrawUnderDropSteal(name); return; }
-
             if (watermarkStyle == null)
-                watermarkStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperRight, fontStyle = FontStyle.Bold, wordWrap = false };
-            watermarkStyle.fontSize = Mathf.Max(12, Screen.height / 60);
+                watermarkStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = 13, wordWrap = false };
 
-            string text = name;
-            if (Compatibility.Problem != null) text += " - " + Compatibility.Problem;
-            if (CoopActive && Settings.AutoAssignControllers.Value) text += "  ·  " + ControllerManager.OpenKey() + ": controllers";
-            // Margin in proportion to the window: the visible area can be a little narrower than Screen.width.
-            float margin = Screen.width * 0.03f;
-            float width = Screen.width - 2 * margin;   // status text can be long ("partly on (off: ...)")
-            var r = new Rect(margin, Screen.height * 0.012f, width, watermarkStyle.fontSize * 2);
-            GUI.color = new Color(0, 0, 0, 0.5f);
-            GUI.Label(new Rect(r.x + 1, r.y + 1, r.width, r.height), text, watermarkStyle);
-            GUI.color = Compatibility.Ok ? new Color(1, 1, 1, 0.55f) : new Color(1, 0.55f, 0.45f, 0.85f);
-            GUI.Label(r, text, watermarkStyle);
-            GUI.color = Color.white;
-        }
-
-        // 100% Drop & Steal Rate draws "[ToE Mod v1.0 by azan22] Drop: ... | [F1: Menu]" at (width - 520, 10) in the
-        // default font at size 13, white, name in bold. Draw our line the same way, directly underneath, so the
-        // two read as one block.
-        GUIStyle stackedStyle;
-
-        void DrawUnderDropSteal(string name)
-        {
-            if (stackedStyle == null)
-                stackedStyle = new GUIStyle(GUI.skin.label) { richText = true, fontSize = 13, wordWrap = false };
             string text = "<b>[" + name + "]</b>";
             if (Compatibility.Problem != null)
                 text += " <color=" + (Compatibility.Ok ? "#FFCC44" : "#FF4444") + ">" + Compatibility.Problem + "</color>";
             if (CoopActive && Settings.AutoAssignControllers.Value)
-                text += (Compatibility.Problem != null ? " |" : "") + " Controllers: <color=#00FF00>" + ControllerManager.OpenKey() + "</color> (F1 is Drop & Steal's)";
+                text += (Compatibility.Problem != null ? " |" : "") + " Controllers: <color=#00FF00>" + ControllerManager.OpenKey() + "</color>" +
+                    (ControllerManager.KeyTakenBy() != null ? " (F1 is Drop & Steal's)" : "");
+            var others = OtherMods.Names(Time.unscaledTime);
+            string also = others.Count == 0 ? null : "Also running: " + string.Join(", ", others.ToArray());
+
+            // Same look as 100% Drop & Steal Rate's status line (default font, size 13, white, name in bold). That mod
+            // draws at (width - 520, 10), left-aligned; when it's there we line up underneath it in the same column,
+            // otherwise we take the top line ourselves, right-aligned to the same right edge.
+            bool underDropSteal = ControllerManager.KeyTakenBy() != null;
+            watermarkStyle.alignment = underDropSteal ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
+            float x = underDropSteal ? Screen.width - 520 : Screen.width - 1010, w = underDropSteal ? 510 : 1000;
+            float y = underDropSteal ? 28 : 10;
             GUI.color = Color.white;
-            GUI.Label(new Rect(Screen.width - 520, 28, 510, 25), text, stackedStyle);
+            GUI.Label(new Rect(x, y, w, 25), text, watermarkStyle);
+            if (also != null) GUI.Label(new Rect(x, y + 18, w, 25), also, watermarkStyle);
         }
     }
 }

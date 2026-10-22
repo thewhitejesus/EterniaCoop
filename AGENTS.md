@@ -68,6 +68,7 @@ src/
   Settings.cs         all config entries
   Native.cs           Rva (every address), Actor (field offsets), Native (module base, safe patching)
   Compatibility.cs    GameNative.dll fingerprint, watermark status text
+  OtherMods.cs        other loaded mods for the watermark (BepInEx plugins + native modules in the game folder)
   Features.cs         per-feature code signatures: which features are safe to turn on
   Players.cs          device -> player assignment (automatic order + saved manual choices)
   ControllerManager.cs  in-game controller manager panel

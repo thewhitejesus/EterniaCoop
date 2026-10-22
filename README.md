@@ -21,7 +21,9 @@ per-character input slots - this mod fills them again.
 - **Per-player rumble:** each player's controller rumbles for their own character's hits, like the PS1.
 - **Safe on game updates and with other mods:** before changing anything, each feature checks the game code it
   needs. If a game update or another mod changed that code, only that feature stays off - nothing is half-applied.
-- Small "Eternia Co-op" label in the top-right corner of the main menu while the mod is running (hidden in game).
+- Small "Eternia Co-op" label in the top-right corner of the main menu while the mod is running (hidden in game),
+  with the controller-manager key and the other mods running alongside it (BepInEx plugins, Guests from Phantasia,
+  ASI mods, ReShade).
 
 ## Screenshots
 

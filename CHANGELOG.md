@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Main-menu label redesigned to match other mods' status lines (small, white, name in bold) and now lists the other
+  mods running alongside ("Also running: ..."). Tested with 100% Drop and Steal Rate and Guests from Phantasia.
 - Works with **100% Drop and Steal Rate** (tested together): that mod opens its menu with F1, so while it's installed
   the controller manager opens with **F8** instead. The main-menu label and the manager say so.
 - Co-op stays off unless the game code check has actually confirmed the input code (it could be skipped before
