@@ -19,7 +19,7 @@ namespace BepInEx6Bridge
     [BepInPlugin(Guid, Name, Version)]
     public class Bridge : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop.bepinex6bridge", Name = "BepInEx 6 Bridge", Version = "1.0.0";
+        public const string Guid = "eterniacoop.bepinex6bridge", Name = "BepInEx 6 Bridge", Version = "1.0.1";
 
         static Assembly shimCore, shimMono;
         static readonly Dictionary<string, Assembly> loadedPlugins = new Dictionary<string, Assembly>(StringComparer.OrdinalIgnoreCase);

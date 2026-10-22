@@ -55,7 +55,7 @@ per-character input slots - this mod fills them again.
 
 1. Extract the zip into the game folder (Steam → right-click the game → Manage → Browse local files), so that
    `winhttp.dll` and the `BepInEx` folder sit next to `Tales of Eternia Remastered.exe`.
-2. Start the game. "Eternia Co-op 1.2.1" appears in the top-right corner of the main menu.
+2. Start the game. "Eternia Co-op 1.2.2" appears in the top-right corner of the main menu.
 3. Connect controllers. Player 1 keeps the keyboard and the first controller; controllers 2–4 become players 2–4.
    To change who is who, open the controller manager (below).
 

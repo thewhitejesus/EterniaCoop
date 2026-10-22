@@ -157,6 +157,7 @@ namespace EterniaCoop
             if (!Open) return;
 
             var devices = Players.Devices();
+            if (devices.Count == 0) return;
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
             if (selected >= devices.Count) selected = devices.Count - 1;
             if (selected < 0) selected = 0;

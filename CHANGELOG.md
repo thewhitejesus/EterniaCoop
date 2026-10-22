@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.2 - 2026-10-22
+- **Per-player rumble now works for players 2-4.** The game only ever asks for rumble for player 1's character, so
+  the old version had nothing to pass on to players 2-4. The mod now applies the game's own rumble rule (rumble on in
+  the options; the character that hit, else the one that got hit; same strength) to players 2-4's characters, on
+  their own controllers. Player 1's rumble is left entirely to the game.
+- **Steam Deck / Linux:** the release zips use standard "/" paths. The old ones (made with Windows PowerShell)
+  unpacked on Linux as files literally named `BepInEx\core\...`.
+- BepInEx 6 Bridge 1.0.1: its library-lookup fallback only answers the BepInEx 6 mods it runs, so other mods behave
+  exactly as without it.
+- Controller manager: no crash path when no input device is present at all.
+
 ## 1.2.1 - 2026-10-22
 - **Battle menu fixed properly for players 2-4** (GitHub issue #1). Like the PS1, the battle menu belongs to whoever
   opens it, and its icon row reads that player's input - but players 2-4's menu presses never registered (D-pad,

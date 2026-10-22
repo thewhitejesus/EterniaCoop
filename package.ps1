@@ -12,6 +12,21 @@ if (-not (Test-Path $BepInExZip)) {
 }
 if ((Get-FileHash $BepInExZip).Hash -ne $bepinexSha) { throw "BepInEx zip checksum mismatch" }
 
+# Zips a folder with "/" in entry names. (Windows PowerShell's Compress-Archive writes "\", which Linux tools - and so
+# Steam Deck users - unpack as files literally named "BepInEx\core\...".)
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+function New-Zip($folder, $zip) {
+    Remove-Item $zip -ErrorAction SilentlyContinue
+    $root = (Resolve-Path $folder).Path.TrimEnd('\') + '\'
+    $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($f in Get-ChildItem $folder -Recurse -File -Force) {
+            $name = $f.FullName.Substring($root.Length).Replace('\', '/')
+            [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $f.FullName, $name, [IO.Compression.CompressionLevel]::Optimal)
+        }
+    } finally { $archive.Dispose() }
+}
+
 & "$PSScriptRoot\build.ps1" -NoInstall
 & "$PSScriptRoot\bridge\build.ps1" -NoInstall
 $bridgeVersion = ([regex]::Match((Get-Content "$PSScriptRoot\bridge\src\Loader\Bridge.cs" -Raw), 'Version = "([^"]+)"')).Groups[1].Value
@@ -36,8 +51,7 @@ Expand-Archive $BepInExZip -DestinationPath $bstage
 Add-Bridge $bstage
 Copy-Item "$PSScriptRoot\bridge\README.md" "$bstage\BepInEx6Bridge-README.md"
 $bzip = "$dist\BepInEx6Bridge-$bridgeVersion.zip"
-Remove-Item $bzip -ErrorAction SilentlyContinue
-Compress-Archive "$bstage\*" $bzip
+New-Zip "$bstage" $bzip
 Remove-Item $bstage -Recurse -Force
 
 # Player package
@@ -50,8 +64,7 @@ Copy-Item "$PSScriptRoot\README.md","$PSScriptRoot\CREDITS.md","$PSScriptRoot\CH
 Copy-Item "$PSScriptRoot\release-assets\licenses\*" "$plug\licenses"
 Copy-Item "$PSScriptRoot\README.md" "$stage\EterniaCoop-README.md"
 $zip = "$dist\EterniaCoop-$version.zip"
-Remove-Item $zip -ErrorAction SilentlyContinue
-Compress-Archive "$stage\*" $zip
+New-Zip "$stage" $zip
 
 # Source package
 $src = "$dist\source"
@@ -66,8 +79,7 @@ New-Item -ItemType Directory -Force "$src\bridge" | Out-Null
 Copy-Item "$PSScriptRoot\bridge\src" "$src\bridge\src" -Recurse
 Copy-Item "$PSScriptRoot\bridge\build.ps1","$PSScriptRoot\bridge\README.md" "$src\bridge"
 $srcZip = "$dist\EterniaCoop-$version-source.zip"
-Remove-Item $srcZip -ErrorAction SilentlyContinue
-Compress-Archive "$src\*" $srcZip
+New-Zip "$src" $srcZip
 
 Remove-Item $stage, $src -Recurse -Force
 Get-ChildItem $dist -Filter *.zip | ForEach-Object { "{0}  {1:N0} KB  SHA256 {2}" -f $_.Name, ($_.Length / 1KB), (Get-FileHash $_.FullName).Hash }
