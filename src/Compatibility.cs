@@ -15,6 +15,7 @@ namespace EterniaCoop
         public static bool Ok { get; private set; }          // false: leave the game alone entirely
         public static bool Exact { get; private set; }       // GameNative.dll is the exact supported build
         public static string Problem { get; private set; }   // short text for the watermark, null when all is well
+        public static string Hash { get; private set; }      // SHA-256 of GameNative.dll (names Sites' cache), null if unreadable
 
         public static void Check(bool strict)
         {
@@ -28,6 +29,7 @@ namespace EterniaCoop
             }
             catch (Exception e) { Plugin.Log.LogWarning("Can't read GameNative.dll (" + e.Message + ")"); }
 
+            Hash = hash;
             Exact = hash == KnownSha256;
             Ok = Exact || !strict;
             if (Exact) Plugin.Log.LogInfo("GameNative.dll matches the supported game version.");
@@ -42,10 +44,11 @@ namespace EterniaCoop
         }
 
         // From Features.Check, once the per-feature code checks are done.
-        public static void Report(bool core, System.Collections.Generic.List<string> missing)
+        public static void Report(bool core, System.Collections.Generic.List<string> missing, int moved)
         {
             if (!core) { Ok = false; Problem = "off: game code not recognized"; return; }
             if (missing.Count > 0) Problem = "partly on (off: " + string.Join(", ", missing.ToArray()) + ")";
+            else if (moved > 0) Problem = "adapted to a game update, all features on";
             else if (!Exact) Problem = "modified game, all features on";
         }
 

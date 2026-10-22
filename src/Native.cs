@@ -5,39 +5,43 @@ using System.Runtime.InteropServices;
 
 namespace EterniaCoop
 {
-    // Every GameNative.dll address the mod touches, as RVAs (offsets from the module base) for the version
-    // Compatibility.KnownSha256 describes. "FUN_xxxxxx" names are Ghidra's names for the function at that RVA.
+    // Every GameNative.dll address the mod uses, as RVAs (offsets from the module base). The values here are the
+    // supported build's (Compatibility.KnownSha256); Features.Check replaces them with where Sites actually found
+    // them, so they follow the game's code after an update. "FUN_xxxxxx" are Ghidra's names for the function there.
     static class Rva
     {
         // Input object (C++ side of the game's input). Global pointer; fields: +0x10 player count,
         // +0x18 remap table (0x1C x 24-byte entries per player), +0x30 buttons (0xAE x 20 per player),
         // +0x48 sticks (2 x 20 per player).
-        public const int InputObject = 0x6449F8;
+        public static int InputObject = 0x6449F8;
 
         // Emulated PSP pad (held/pressed/released words, repeat timers, per-button bools), filled from player 1.
-        public const int Pad = 0x8C9180, PadSize = 0x144;
+        public static int Pad = 0x8C9180;
+        public const int PadSize = 0x144;
 
         // Battle: one 0x20-byte command block per party slot; each party actor reads its own via actor+0xF0.
-        public const int CmdBlocks = 0x12CEBA0, CmdSize = 0x20;
-        public const int ActorArray = 0x12CECD8, ActorSize = 0x248, ActorCount = 13;
+        public static int CmdBlocks = 0x12CEBA0;
+        public const int CmdSize = 0x20;
+        public static int ActorArray = 0x12CECD8;
+        public const int ActorSize = 0x248, ActorCount = 13;
         // Battle state flags (byte); bit 0 = battle menu open / paused (set by Start in FUN_D2C80).
-        public const int BattleFlags = 0x12CEB7A;
+        public static int BattleFlags = 0x12CEB7A;
         // Battle menu owner (byte): command block index + 1 of whoever opened it with the menu button, 0 = none.
-        public const int MenuOpener = 0x12CEB8C;
+        public static int MenuOpener = 0x12CEB8C;
 
         // Party (menu/save side): member ids (4 x short) and control mode per slot (byte: 0 Auto, 1 Semi-Auto).
-        public const int PartyIds = 0x11CAD10, SlotModes = 0x11CAD38;
+        public static int PartyIds = 0x11CAD10, SlotModes = 0x11CAD38;
 
         // Current area (2 shorts, e.g. 06 00 6F 00 in the field); all zero on the title screen.
-        public const int Area = 0x11CAFC4;
+        public static int Area = 0x11CAFC4;
 
         // Functions we call or hook.
-        public const int BattleCommands = 0x1121E0;   // FUN_1121E0(uint* padHeld): pad -> slot 0's command block
-        public const int BuildPad = 0x19DBC0;         // FUN_19DBC0(pad, rate, flag): input object (player 1) -> PSP pad
-        public const int ApplyHit = 0x8E320;          // FUN_8E320(type, flags, hit, attacker, victim)
+        public static int BattleCommands = 0x1121E0;   // FUN_1121E0(uint* padHeld): pad -> slot 0's command block
+        public static int BuildPad = 0x19DBC0;         // FUN_19DBC0(pad, rate, flag): input object (player 1) -> PSP pad
+        public static int ApplyHit = 0x8E320;          // FUN_8E320(type, flags, hit, attacker, victim)
 
         // Game options object (pointer); +0x21 = rumble on.
-        public const int GameOptions = 0x6449E0;
+        public static int GameOptions = 0x6449E0;
     }
 
     // Battle actor field offsets.

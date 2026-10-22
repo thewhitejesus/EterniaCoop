@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0 - 2026-10-22
+- **Survives game updates.** Every spot the mod uses in the game's code (46 code spots, 11 data addresses) now has a
+  code signature. When a game update moves code, the mod searches for each one and accepts it only if it's found
+  exactly (the right number of times, pointing at the right data) - then the main menu says "adapted to a game
+  update". Anything it can't find with certainty stays off, as before. Results are remembered per game version, so
+  the search happens once (about 0.2 s). Tested by searching every spot from scratch in the running game and against
+  simulated updates that move code and data.
+- Signatures avoid the first bytes of functions, where other mods hook the game, so mods like Guests from Phantasia
+  and Uncropped Backgrounds don't get in the way.
+- Faster: no memory allocations in the battle input code, controller-manager shortcuts and mod checks worked out
+  once a second instead of every frame, cached lookups for rumble and controller assignment.
+
 ## 1.2.2 - 2026-10-22
 - **Per-player rumble now works for players 2-4.** The game only ever asks for rumble for player 1's character, so
   the old version had nothing to pass on to players 2-4. The mod now applies the game's own rumble rule (rumble on in

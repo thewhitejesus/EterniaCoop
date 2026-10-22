@@ -19,8 +19,9 @@ per-character input slots - this mod fills them again.
 - **Semi-Auto / Auto tab for every party member** in the Skills menu (the game normally shows it only for the leader).
 - **Control modes stay set after battles** (the game used to reset them to Auto).
 - **Per-player rumble:** each player's controller rumbles for their own character's hits, like the PS1.
-- **Safe on game updates and with other mods:** before changing anything, each feature checks the game code it
-  needs. If a game update or another mod changed that code, only that feature stays off - nothing is half-applied.
+- **Survives game updates:** the mod finds every spot it uses in the game's code by its signature, so when an update
+  moves code around it adapts by itself ("adapted to a game update" on the main menu). Anything it can't find with
+  certainty stays off - nothing is half-applied - and works alongside other mods that change the game's code.
 - Small "Eternia Co-op" label in the top-right corner of the main menu while the mod is running (hidden in game),
   with the controller-manager key and the other mods running alongside it (BepInEx plugins, Guests from Phantasia,
   ASI mods, ReShade).
@@ -55,7 +56,7 @@ per-character input slots - this mod fills them again.
 
 1. Extract the zip into the game folder (Steam → right-click the game → Manage → Browse local files), so that
    `winhttp.dll` and the `BepInEx` folder sit next to `Tales of Eternia Remastered.exe`.
-2. Start the game. "Eternia Co-op 1.2.2" appears in the top-right corner of the main menu.
+2. Start the game. "Eternia Co-op 1.3.0" appears in the top-right corner of the main menu.
 3. Connect controllers. Player 1 keeps the keyboard and the first controller; controllers 2–4 become players 2–4.
    To change who is who, open the controller manager (below).
 

@@ -1,5 +1,7 @@
-// Code patches inside GameNative.dll. Features.Check has already verified every site of a feature before any of
-// it is applied; each patch also re-checks its exact original bytes and is skipped (with a log line) if they differ.
+// Code patches inside GameNative.dll, at the sites Sites found (Features.Check has resolved every site of a feature
+// before any of it is applied). Each patch also re-checks the instruction bytes it changes and is skipped (with a log
+// line) if they differ. Parts that move between builds (jump distances, RIP-relative addresses) were already checked
+// by the site's signature and are left as they are.
 using System;
 using System.Runtime.InteropServices;
 
@@ -11,25 +13,28 @@ namespace EterniaCoop
 
         // Input setup (FUN_18940) hardcodes playerCount = 1 and sizes two per-player buffers for one player.
         // Its poll loop (FUN_57768) already runs GetInputInfo/GetStickInfo for every player < playerCount.
-        // Each entry: rva, size in bytes, original value, value per player, belongs to the remap table.
+        // Each entry: site, immediate's offset in the instruction, size in bytes, original value, value per player,
+        // belongs to the remap table.
         struct Imm
         {
-            public int Rva, Size, Orig, PerPlayer; public bool Remap;
-            public Imm(int rva, int size, int orig, int perPlayer, bool remap) { Rva = rva; Size = size; Orig = orig; PerPlayer = perPlayer; Remap = remap; }
+            public string Site; public int At, Size, Orig, PerPlayer; public bool Remap;
+            public Imm(string site, int at, int size, int orig, int perPlayer, bool remap)
+            { Site = site; At = at; Size = size; Orig = orig; PerPlayer = perPlayer; Remap = remap; }
+            public int Rva { get { return Sites.Rva(Site, 0) + At; } }
         }
 
         static readonly Imm[] PlayerCountImms =
         {
-            new Imm(0x18A44, 4, 1, 1, false),            // mov dword [rdi+0x10], 1       -> player count
-            new Imm(0x18B79, 1, 2, 2, false),            // cmp rcx, 2                     stick vector, 2 per player
-            new Imm(0x18B9A, 1, 2, 2, false),            // cmp rax, 2
-            new Imm(0x18B9E, 4, 2, 2, false),            // mov edx, 2
-            new Imm(0x18BAE, 4, 2, 2, false),            // mov eax, 2
-            new Imm(0x18A6B, 1, 0x1C, 0x1C, true),       // cmp rcx, 0x1c                  remap table, 0x1c per player
-            new Imm(0x18A96, 1, 0x1C, 0x1C, true),       // cmp rax, 0x1c
-            new Imm(0x18A9A, 4, 0x1C, 0x1C, true),       // mov edx, 0x1c
-            new Imm(0x18AAA, 4, 0x1C, 0x1C, true),       // mov eax, 0x1c
-            new Imm(0x18A71, 4, 0x2A0, 0x2A0, true),     // lea rax, [rdx+0x2a0]           (0x1c entries * 24 bytes)
+            new Imm("Count", 3, 4, 1, 1, false),               // mov dword [rdi+0x10], 1       -> player count
+            new Imm("StickCmp1", 3, 1, 2, 2, false),           // cmp rcx, 2                     stick vector, 2 per player
+            new Imm("StickCmp2", 3, 1, 2, 2, false),           // cmp rax, 2
+            new Imm("StickMovEdx", 1, 4, 2, 2, false),         // mov edx, 2
+            new Imm("StickMovEax", 1, 4, 2, 2, false),         // mov eax, 2
+            new Imm("RemapCmp1", 3, 1, 0x1C, 0x1C, true),      // cmp rcx, 0x1c                  remap table, 0x1c per player
+            new Imm("RemapCmp2", 3, 1, 0x1C, 0x1C, true),      // cmp rax, 0x1c
+            new Imm("RemapMovEdx", 1, 4, 0x1C, 0x1C, true),    // mov edx, 0x1c
+            new Imm("RemapMovEax", 1, 4, 0x1C, 0x1C, true),    // mov eax, 0x1c
+            new Imm("RemapLea", 3, 4, 0x2A0, 0x2A0, true),     // lea rax, [rdx+0x2a0]           (0x1c entries * 24 bytes)
         };
 
         static int ReadImm(Imm i) { return i.Size == 1 ? Marshal.ReadByte(Native.At(i.Rva)) : Marshal.ReadInt32(Native.At(i.Rva)); }
@@ -57,17 +62,19 @@ namespace EterniaCoop
             // global latch flags; later players cleared player 1's and left the camera spinning. Their guard
             // "cmp edx, [rcx+0x10]" (player < count) becomes "cmp edx, 1" so they run for player 1 only.
             if (Settings.HelpersPlayer0Only.Value)
-                foreach (int rva in new[] { 0x57AAE, 0x57F2F })
-                    Native.Patch(rva, new byte[] { 0x3B, 0x51, 0x10 }, new byte[] { 0x83, 0xFA, 0x01 });
+                foreach (string site in new[] { "LatchGuard", "RemapGuard" })
+                    Native.Patch(Sites.Rva(site, 0), new byte[] { 0x3B, 0x51, 0x10 }, new byte[] { 0x83, 0xFA, 0x01 });
 
             // The battle-results code (FUN_84210) writes 0 (Auto) into party slots 2-4's control mode after every
-            // battle: "mov byte [0x11CAD39/3A/3B], 0". Each 7-byte store becomes a 7-byte NOP.
+            // battle: "mov byte [SlotModes+1/2/3], 0" (C6 05 disp32 00). Each 7-byte store becomes a 7-byte NOP.
             if (Settings.KeepSlotModesAfterBattle.Value && Features.KeepModes)
-            {
-                Native.Patch(0x84C91, new byte[] { 0xC6, 0x05, 0xA1, 0x60, 0x14, 0x01, 0x00 }, Nop7);
-                Native.Patch(0x84D31, new byte[] { 0xC6, 0x05, 0x02, 0x60, 0x14, 0x01, 0x00 }, Nop7);
-                Native.Patch(0x84DD1, new byte[] { 0xC6, 0x05, 0x63, 0x5F, 0x14, 0x01, 0x00 }, Nop7);
-            }
+                foreach (string site in new[] { "ResetSlot2", "ResetSlot3", "ResetSlot4" })
+                {
+                    int rva = Sites.Rva(site, 0);
+                    if (Native.Matches(rva, new byte[] { 0xC6, 0x05 }) && Native.Matches(rva + 6, new byte[] { 0x00 }))
+                        Native.Write(rva, Nop7);
+                    else Plugin.Log.LogError(string.Format("Unexpected code at GameNative+0x{0:X}, left unpatched", rva));
+                }
 
             if (Settings.MenuModeTabForAll.Value && Features.MenuTab) ApplyMenuTab();
             Plugin.Log.LogMessage("GameNative input now handles " + players + " players.");
@@ -79,18 +86,31 @@ namespace EterniaCoop
         // toggles is already mode[selected], so lifting the gates gives every party member the tab.
         static void ApplyMenuTab()
         {
-            int ok = 0;
-            // Input handler FUN_228AD0: show the tab's elements (je -> jmp).
-            foreach (int rva in new[] { 0x22963D, 0x229822, 0x229E96, 0x22A0D1, 0x22B30E })
-                if (Native.Patch(rva, new byte[] { 0x74, 0x14 }, new byte[] { 0xEB, 0x14 })) ok++;
+            int ok = 0, total = 0;
+            // Input handler FUN_228AD0: show the tab's elements (je -> jmp, keeping the jump distance). Five copies.
+            foreach (int rva in Sites.Get("TabJe").Rvas)
+            {
+                total++;
+                if (Native.Patch(rva, new byte[] { 0x74 }, new byte[] { 0xEB })) ok++;
+            }
             // Cursor can move up into the tab (cmp r10b,1 -> cmp r10b,4).
-            foreach (int rva in new[] { 0x2292F2, 0x22B5EF })
-                if (Native.Patch(rva, new byte[] { 0x41, 0x80, 0xFA, 0x01 }, new byte[] { 0x41, 0x80, 0xFA, 0x04 })) ok++;
-            // Confirming on the tab (jae "leader only" -> 6-byte NOP).
-            if (Native.Patch(0x229161, new byte[] { 0x0F, 0x83, 0x4C, 0x02, 0x00, 0x00 }, new byte[] { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 })) ok++;
+            foreach (string site in new[] { "TabCursor1", "TabCursor2" })
+            {
+                total++;
+                if (Native.Patch(Sites.Rva(site, 0), new byte[] { 0x41, 0x80, 0xFA, 0x01 }, new byte[] { 0x41, 0x80, 0xFA, 0x04 })) ok++;
+            }
+            // Confirming on the tab (jae rel32 "leader only" -> 6-byte NOP).
+            total++;
+            int confirm = Sites.Rva("TabConfirm", 0);
+            if (Native.Matches(confirm, new byte[] { 0x0F, 0x83 }))
+            {
+                Native.Write(confirm, new byte[] { 0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00 });
+                ok++;
+            }
             // Draw code FUN_224920: "if (selected < 1) draw Control Mode tab" -> selected < 4.
-            if (Native.Patch(0x224B6A, new byte[] { 0x83, 0xF9, 0x01 }, new byte[] { 0x83, 0xF9, 0x04 })) ok++;
-            Plugin.Log.LogMessage("Semi-Auto/Auto menu tab enabled for all party members (" + ok + "/9 patches).");
+            total++;
+            if (Native.Patch(Sites.Rva("TabDraw", 0), new byte[] { 0x83, 0xF9, 0x01 }, new byte[] { 0x83, 0xF9, 0x04 })) ok++;
+            Plugin.Log.LogMessage("Semi-Auto/Auto menu tab enabled for all party members (" + ok + "/" + total + " patches).");
         }
     }
 }
