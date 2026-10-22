@@ -130,21 +130,21 @@ namespace EterniaCoop
             return p;
         }
 
-        public static void Clear(IntPtr p, int size)
+        // Clear and Copy run several times per battle frame (and Clear for every blanked player's input each frame):
+        // plain memory operations, no managed allocations.
+        public static unsafe void Clear(IntPtr p, int size)
         {
-            for (int i = 0; i < size; i++) Marshal.WriteByte(p, i, 0);
+            byte* b = (byte*)p;
+            int i = 0;
+            for (; i + 8 <= size; i += 8) *(long*)(b + i) = 0;
+            for (; i < size; i++) b[i] = 0;
         }
 
-        public static void Copy(IntPtr from, IntPtr to, int size)
+        public static unsafe void Copy(IntPtr from, IntPtr to, int size)
         {
-            var tmp = new byte[size];
-            Marshal.Copy(from, tmp, 0, size);
-            Marshal.Copy(tmp, 0, to, size);
+            Buffer.MemoryCopy((void*)from, (void*)to, size, size);
         }
 
-        public static float ReadFloat(IntPtr p)
-        {
-            return BitConverter.ToSingle(BitConverter.GetBytes(Marshal.ReadInt32(p)), 0);
-        }
+        public static unsafe float ReadFloat(IntPtr p) { return *(float*)p; }
     }
 }

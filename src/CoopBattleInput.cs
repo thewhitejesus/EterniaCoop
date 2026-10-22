@@ -72,7 +72,7 @@ namespace EterniaCoop
                     return;
                 }
 
-                bool[] wanted = ControlledSlots();
+                ControlledSlots();
                 IntPtr pad = Native.At(Rva.Pad), cmd0 = Battle.CmdBlock(0);
                 for (int p = 1; p < players && p < 4; p++)
                 {
@@ -101,11 +101,13 @@ namespace EterniaCoop
         // Party slots whose actor is player-controlled this frame. With LiveModeSync, slots 2-4 also follow the
         // menu setting mid-battle (the battle copies modes only at its start) and go Auto while their player has
         // no controller - so a dropped Parsec guest's character keeps fighting on AI.
-        static bool[] ControlledSlots()
+        static readonly bool[] wanted = new bool[4];   // filled every frame (the hook never runs re-entrantly)
+
+        static void ControlledSlots()
         {
-            var wanted = new bool[4];
+            for (int i = 0; i < 4; i++) wanted[i] = false;
             IntPtr actors = Battle.Actors();
-            if (actors == IntPtr.Zero) return wanted;
+            if (actors == IntPtr.Zero) return;
             for (int i = 0; i < Rva.ActorCount; i++)
             {
                 IntPtr a = Battle.ActorAt(actors, i);
@@ -125,7 +127,6 @@ namespace EterniaCoop
                 }
                 if (ctrl != 0) wanted[slot] = true;
             }
-            return wanted;
         }
 
         static void ClearPlayer(int p)

@@ -50,6 +50,8 @@ namespace EterniaCoop
             catch { }
         }
 
+        static System.Reflection.MethodInfo setVibration, stopVibration;   // UgxInputManager's, looked up once
+
         // Main thread, every frame.
         public static void Update(float seconds)
         {
@@ -58,15 +60,17 @@ namespace EterniaCoop
             {
                 if (pending[p] > 0)
                 {
-                    AccessTools.Method(Players.InputManager.GetType(), "SetVibration", new[] { typeof(float), typeof(int) })
-                        .Invoke(Players.InputManager, new object[] { pending[p], p });
+                    if (setVibration == null)
+                        setVibration = AccessTools.Method(Players.InputManager.GetType(), "SetVibration", new[] { typeof(float), typeof(int) });
+                    setVibration.Invoke(Players.InputManager, new object[] { pending[p], p });
                     until[p] = Time.unscaledTime + seconds;
                     pending[p] = 0;
                 }
                 else if (until[p] > 0 && Time.unscaledTime >= until[p])
                 {
-                    AccessTools.Method(Players.InputManager.GetType(), "StopVibration", new[] { typeof(int) })
-                        .Invoke(Players.InputManager, new object[] { p });
+                    if (stopVibration == null)
+                        stopVibration = AccessTools.Method(Players.InputManager.GetType(), "StopVibration", new[] { typeof(int) });
+                    stopVibration.Invoke(Players.InputManager, new object[] { p });
                     until[p] = 0;
                 }
             }

@@ -40,7 +40,16 @@ namespace EterniaCoop
             return isDown && !was;
         }
 
-        static bool KeyPressed(Keyboard kb, Key k) { return kb != null && Pressed("kb" + k, kb[k].isPressed); }
+        static readonly Dictionary<Key, bool> keyHeld = new Dictionary<Key, bool>();   // checked every frame: no string keys
+
+        static bool KeyPressed(Keyboard kb, Key k)
+        {
+            if (kb == null) return false;
+            bool down = kb[k].isPressed, was;
+            keyHeld.TryGetValue(k, out was);
+            keyHeld[k] = down;
+            return down && !was;
+        }
 
         static bool PadPressed(Gamepad p, string name, bool isDown) { return Pressed(p.deviceId + name, isDown); }
 
@@ -62,89 +71,85 @@ namespace EterniaCoop
 
         static bool ShortcutButtonsBut(Gamepad p, ButtonControl except)
         {
-            foreach (var b in new[] { p.leftShoulder, p.rightShoulder, p.selectButton, p.startButton, p.leftStickButton, p.rightStickButton })
-                if (b != except && b.isPressed) return true;
-            return false;
+            return Down(p.leftShoulder, except) || Down(p.rightShoulder, except) || Down(p.selectButton, except) ||
+                Down(p.startButton, except) || Down(p.leftStickButton, except) || Down(p.rightStickButton, except);
         }
+
+        static bool Down(ButtonControl b, ButtonControl except) { return b != except && b.isPressed; }
 
         static bool BackTapped(Gamepad p) { return Tapped(p, "back", p.selectButton.isPressed, ShortcutButtonsBut(p, p.selectButton)); }
 
-        public static Key OpenKey()
+        // ---- shortcuts ----
+        // Worked out once a second (Refresh) rather than every frame: they only change when a setting changes or another
+        // mod finishes loading (plugins can load after us; Guests from Phantasia's native DLL a few seconds later).
+        enum Combo { None, L3R3, LbRbBack, BackStart }
+
+        static float nextRefresh;
+        static Key openKey;
+        static Combo combo;
+        static string keyTakenBy, shortcutTakenBy, shortcutName, conflictNote, conflictShort;
+
+        static void Refresh()
         {
-            Key k;
-            if (!System.Enum.TryParse(Settings.ManagerKey.Value, true, out k) || k == Key.None) k = Key.F1;
+            if (Time.unscaledTime < nextRefresh && shortcutName != null) return;
+            nextRefresh = Time.unscaledTime + 1f;
+
             // 100% Drop & Steal Rate (azan22) opens its own menu with F1, so both would open at once.
-            if (k == Key.F1 && KeyTakenBy() != null) k = Key.F8;
-            return k;
-        }
-
-        // Shown wherever the key is: why it isn't F1, or "" when it's the configured key.
-        public static string OpenKeyNote()
-        {
-            string other = OpenKey() == Key.F8 && KeyTakenBy() != null ? KeyTakenBy() : null;
-            return other == null ? "" : " (F1 is used by " + other + ")";
-        }
-
-        // Name of a loaded mod that also uses F1, or null. Checked each time: plugins can load after us.
-        public static string KeyTakenBy()
-        {
+            keyTakenBy = null;
             foreach (var info in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
                 if (info.Location != null && System.IO.Path.GetFileName(info.Location) == "TalesOfEternia_DropStealMod.dll")
-                    return "100% Drop & Steal";
-            return null;
-        }
+                    keyTakenBy = "100% Drop & Steal";
+            if (!System.Enum.TryParse(Settings.ManagerKey.Value, true, out openKey) || openKey == Key.None) openKey = Key.F1;
+            bool keyMoved = openKey == Key.F1 && keyTakenBy != null;
+            if (keyMoved) openKey = Key.F8;
 
-        // The configured controller shortcut as display text ("" when disabled).
-        public static string ShortcutName()
-        {
+            // Guests from Phantasia (native mod) toggles its guest with L3+R3, repeatedly while held, so both would fire.
+            shortcutTakenBy = Native.ModuleLoaded("ToE_Guest.dll") ? "Guests from Phantasia" : null;
+            bool shortcutMoved = false;
             switch (Settings.ManagerControllerShortcut.Value.Replace(" ", "").ToUpperInvariant())
             {
-                case "NONE": return "";
-                case "LB+RB+BACK": return "LB + RB + Back";
-                case "BACK+START": return "Back + Start";
+                case "NONE": combo = Combo.None; break;
+                case "LB+RB+BACK": combo = Combo.LbRbBack; break;
+                case "BACK+START": combo = Combo.BackStart; break;
                 default:
-                    // Guests from Phantasia toggles its guest with L3+R3 (repeatedly while held), so both would fire.
-                    return ShortcutTakenBy() != null ? "LB + RB + Back" : "L3 + R3";
+                    shortcutMoved = shortcutTakenBy != null;
+                    combo = shortcutMoved ? Combo.LbRbBack : Combo.L3R3;
+                    break;
             }
+            shortcutName = combo == Combo.None ? "" : combo == Combo.LbRbBack ? "LB + RB + Back" : combo == Combo.BackStart ? "Back + Start" : "L3 + R3";
+
+            var parts = new List<string>();
+            var moved = new List<string>();
+            if (keyMoved) { parts.Add("F1 is " + keyTakenBy + "'s"); moved.Add("F1"); }
+            if (shortcutMoved) { parts.Add("L3 + R3 is " + shortcutTakenBy + "'s"); moved.Add("L3 + R3"); }
+            conflictNote = parts.Count == 0 ? "" : " (" + string.Join(", ", parts.ToArray()) + ")";
+            conflictShort = moved.Count == 0 ? "" : "Moved off " + string.Join(" and ", moved.ToArray()) + " (used by other mods)";
         }
 
-        // Name of a loaded mod that also uses L3+R3, or null. Guests from Phantasia is a native mod (version.dll
-        // loader), loaded a few seconds after us, so this is checked each time.
-        public static string ShortcutTakenBy()
-        {
-            return Native.ModuleLoaded("ToE_Guest.dll") ? "Guests from Phantasia" : null;
-        }
+        public static Key OpenKey() { Refresh(); return openKey; }
+
+        // Name of a loaded mod that also uses F1, or null.
+        public static string KeyTakenBy() { Refresh(); return keyTakenBy; }
+
+        // The controller shortcut as display text ("" when disabled).
+        public static string ShortcutName() { Refresh(); return shortcutName; }
+
+        // Name of a loaded mod that also uses L3+R3, or null.
+        public static string ShortcutTakenBy() { Refresh(); return shortcutTakenBy; }
 
         // Why the shortcuts aren't the defaults, for the manager ("" when they are): " (F1 is X's, L3 + R3 is Y's)".
-        public static string ConflictNote()
-        {
-            var parts = new List<string>();
-            if (OpenKeyNote() != "") parts.Add("F1 is " + KeyTakenBy() + "'s");
-            if (ShortcutMoved()) parts.Add("L3 + R3 is " + ShortcutTakenBy() + "'s");
-            return parts.Count == 0 ? "" : " (" + string.Join(", ", parts.ToArray()) + ")";
-        }
+        public static string ConflictNote() { Refresh(); return conflictNote; }
 
         // The same, short enough for the main-menu label: "Moved off F1 and L3 + R3 (used by other mods)", or "".
-        public static string ConflictShort()
-        {
-            var moved = new List<string>();
-            if (OpenKeyNote() != "") moved.Add("F1");
-            if (ShortcutMoved()) moved.Add("L3 + R3");
-            return moved.Count == 0 ? "" : "Moved off " + string.Join(" and ", moved.ToArray()) + " (used by other mods)";
-        }
-
-        static bool ShortcutMoved()
-        {
-            return ShortcutTakenBy() != null && Settings.ManagerControllerShortcut.Value.Replace(" ", "").ToUpperInvariant() == "L3+R3";
-        }
+        public static string ConflictShort() { Refresh(); return conflictShort; }
 
         static bool ShortcutHeld(Gamepad p)
         {
-            switch (ShortcutName())
+            switch (combo)
             {
-                case "": return false;
-                case "LB + RB + Back": return p.leftShoulder.isPressed && p.rightShoulder.isPressed && p.selectButton.isPressed;
-                case "Back + Start": return p.selectButton.isPressed && p.startButton.isPressed;
+                case Combo.None: return false;
+                case Combo.LbRbBack: return p.leftShoulder.isPressed && p.rightShoulder.isPressed && p.selectButton.isPressed;
+                case Combo.BackStart: return p.selectButton.isPressed && p.startButton.isPressed;
                 default: return p.leftStickButton.isPressed && p.rightStickButton.isPressed;
             }
         }

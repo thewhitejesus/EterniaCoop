@@ -30,10 +30,13 @@ namespace EterniaCoop
         static string lastAssignment = "";
         static readonly Dictionary<string, int> manual = new Dictionary<string, int>();   // device path -> player 0-3
 
+        static System.Reflection.MethodInfo getInputPlayer, setInputDevices;   // looked up once
+
         public static object Get(int i)
         {
             if (InputManager == null) return null;
-            return AccessTools.Method(InputManager.GetType(), "GetInputPlayer").Invoke(InputManager, new object[] { i });
+            if (getInputPlayer == null) getInputPlayer = AccessTools.Method(InputManager.GetType(), "GetInputPlayer");
+            return getInputPlayer.Invoke(InputManager, new object[] { i });
         }
 
         // Keyboard (mouse follows it) first, then controllers in connection order.
@@ -131,7 +134,8 @@ namespace EterniaCoop
             {
                 object p = Get(i);
                 if (p == null) continue;
-                if (want[i].Count > 0) AccessTools.Method(p.GetType(), "SetInputDevices").Invoke(p, new object[] { want[i].ToArray() });
+                if (setInputDevices == null) setInputDevices = AccessTools.Method(p.GetType(), "SetInputDevices");
+                if (want[i].Count > 0) setInputDevices.Invoke(p, new object[] { want[i].ToArray() });
                 names.Append("  P" + (i + 1) + "=");
                 if (want[i].Count == 0) names.Append("(none)");
                 foreach (var d in want[i]) names.Append(d.displayName + " ");
