@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1 - 2026-10-22
+- **Battle menu fixed properly for players 2-4** (GitHub issue #1). Like the PS1, the battle menu belongs to whoever
+  opens it, and its icon row reads that player's input - but players 2-4's menu presses never registered (D-pad,
+  confirm, cancel), and 1.1.3 also cut off their stick and camera pan. Now the opener's own controller drives the whole
+  battle menu: D-pad and stick, confirm/cancel, camera pan (hold Square) and the submenus. Tested with a controller as
+  player 2.
+
 ## 1.2.0 - 2026-10-22
 - **BepInEx 6 mods work alongside co-op.** New, included **BepInEx 6 Bridge**: runs mods built for BepInEx 6 on
   BepInEx 5, so co-op, 100% Drop and Steal Rate, Uncropped Backgrounds, Fast Shutdown and Font Replacer all run
