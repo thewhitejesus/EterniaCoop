@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 1.1.3 - 2026-10-22
+- **Fixed a soft-lock:** players 2-4 could open the battle menu (Start, or Tab on the keyboard), but the remaster's
+  battle menu only takes player 1's input, so they couldn't confirm, cancel or close it (GitHub issue #1). Now every
+  controller and the keyboard/mouse count as player 1 while the battle menu is open, so whoever opened it can use it
+  and close it; everyone goes back to their own player when it closes.
 - Steam Deck / Linux (Proton) instructions: the `WINEDLLOVERRIDES="winhttp=n,b" %command%` launch option BepInEx
   needs there, plus Deck controller notes. The log says when the mod runs under Wine/Proton. Not tested on a Deck yet.
 

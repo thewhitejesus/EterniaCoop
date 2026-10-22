@@ -21,5 +21,12 @@ namespace EterniaCoop
         }
 
         public static IntPtr CmdBlock(int slot) { return Native.At(Rva.CmdBlocks + slot * Rva.CmdSize); }
+
+        // In a battle with its menu open (the battle is paused). Rva.BattleFlags is checked by Features.CoopBattle.
+        public static bool MenuOpen()
+        {
+            return Features.CoopBattle && Native.Base != 0 && Actors() != IntPtr.Zero &&
+                (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0;
+        }
     }
 }

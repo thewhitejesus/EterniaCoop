@@ -40,6 +40,9 @@ namespace EterniaCoop
             Plugin.Log.LogMessage("Co-op battle input hooked.");
         }
 
+        // Command block: +0 held, +4 newly pressed, +8 raw pad bits (the rest is the combo history).
+        const int CmdButtons = 0xC;
+
         // Runs once per battle frame, possibly on the game's own thread: no Unity API in here.
         static void Hook(IntPtr padHeld)
         {
@@ -51,6 +54,16 @@ namespace EterniaCoop
                 IntPtr obj = Marshal.ReadIntPtr(Native.At(Rva.InputObject));
                 if (obj == IntPtr.Zero) return;
                 int players = Marshal.ReadInt32(obj, 0x10);
+
+                // Battle menu open (paused): it reads only the global pad, i.e. player 1 - who meanwhile listens to every
+                // device (Players.ShareWithPlayer1). Leave the pad alone so the menu never catches player 2-4's pad
+                // mid-swap, and give slots 2-4 no input until it closes.
+                if ((Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0)
+                {
+                    for (int p = 1; p < 4; p++) Native.Clear(Battle.CmdBlock(p), CmdButtons);
+                    return;
+                }
+
                 bool[] wanted = ControlledSlots();
                 IntPtr pad = Native.At(Rva.Pad), cmd0 = Battle.CmdBlock(0);
                 for (int p = 1; p < players && p < 4; p++)

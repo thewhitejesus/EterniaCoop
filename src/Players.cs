@@ -19,6 +19,10 @@ namespace EterniaCoop
         public static volatile bool[] HasDevice = { true, false, false, false };
         // While the controller manager is open the game gets no input at all.
         public static volatile bool BlockAll;
+        // While the battle menu is open, player 1 also listens to every other device: the remaster's battle menu takes
+        // player 1's input only, so whoever opened it (Start, or Tab on the keyboard) can use and close it - the
+        // closest we get to the PS1, where each player had their own menu.
+        public static bool ShareWithPlayer1;
 #if COOP_DEBUG
         public static volatile bool ForceBlankExtraPlayers;   // research toggle (Numpad 0)
 #endif
@@ -101,6 +105,9 @@ namespace EterniaCoop
                 result[players[i]].Add(devices[i]);
                 if (devices[i] is Keyboard && Mouse.current != null) result[players[i]].Add(Mouse.current);
             }
+            if (ShareWithPlayer1)
+                for (int p = 1; p < 4; p++)
+                    foreach (var d in result[p]) if (!result[0].Contains(d)) result[0].Add(d);
             return result;
         }
 

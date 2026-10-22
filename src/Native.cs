@@ -20,6 +20,8 @@ namespace EterniaCoop
         // Battle: one 0x20-byte command block per party slot; each party actor reads its own via actor+0xF0.
         public const int CmdBlocks = 0x12CEBA0, CmdSize = 0x20;
         public const int ActorArray = 0x12CECD8, ActorSize = 0x248, ActorCount = 13;
+        // Battle state flags (byte); bit 0 = battle menu open / paused (set by Start in FUN_D2C80).
+        public const int BattleFlags = 0x12CEB7A;
 
         // Party (menu/save side): member ids (4 x short) and control mode per slot (byte: 0 Auto, 1 Semi-Auto).
         public const int PartyIds = 0x11CAD10, SlotModes = 0x11CAD38;

@@ -119,6 +119,8 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 
 - **Tested with 2 players** (controller + keyboard). 3–4 players and Parsec should work - please report how it goes.
 - **Menus, the field and cutscenes are controlled by player 1 only**, as on the PS1. Co-op is for battles.
+  Any player can open the **battle menu** (Start, or Tab on the keyboard): while it's open every controller and the
+  keyboard/mouse act as player 1, so whoever opened it can use and close it.
 - **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
   so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). **Uncropped
