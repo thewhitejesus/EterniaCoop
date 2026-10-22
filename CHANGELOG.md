@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.2 - 2026-10-21
 - Works with **Guests from Phantasia** without a shortcut clash: it toggles its guest with L3+R3, so while it's
   installed the controller manager's controller shortcut is **LB+RB+Back** instead. The label and manager say so.
 - Controller manager: LB / RB now act when released, so closing with LB+RB+Back no longer moves the controller.
@@ -10,7 +10,6 @@
   the controller manager opens with **F8** instead. The main-menu label and the manager say so.
 - Co-op stays off unless the game code check has actually confirmed the input code (it could be skipped before
   in theory).
-- The main-menu label uses the full screen width and no longer wraps, so a long "partly on (off: ...)" status fits.
 - The label only reads the game's area id once that address is confirmed, so an unrecognized game version can't
   make it read the wrong memory.
 

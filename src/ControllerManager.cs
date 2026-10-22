@@ -1,6 +1,7 @@
 // In-game controller manager: choose which device controls which player.
-//   Open/close:  Settings.ManagerKey (F1; F8 when another loaded mod uses F1) on the keyboard, or hold Settings.ManagerControllerShortcut (L3+R3) on any
-//                controller (so Parsec guests can open it); Esc also closes.
+//   Open/close:  Settings.ManagerKey (F1) on the keyboard, or hold Settings.ManagerControllerShortcut (L3+R3) on any
+//                controller (so Parsec guests can open it); Esc also closes. The defaults move to F8 / LB+RB+Back
+//                while a mod that uses them is loaded (100% Drop & Steal Rate / Guests from Phantasia).
 //   Controllers: LB/RB or D-pad left/right move that controller to the previous/next player. Back/Select resets.
 //   Keyboard:    Up/Down pick a row, Left/Right change its player, R resets everything to automatic.
 // The game gets no input while it's open. Choices are saved per device in Settings.DeviceAssignments.

@@ -37,7 +37,8 @@ namespace EterniaCoop
                 }
 
                 string game = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, ".."));
-                foreach (ProcessModule m in Process.GetCurrentProcess().Modules)
+                using (var self = Process.GetCurrentProcess())
+                foreach (ProcessModule m in self.Modules)
                 {
                     string path = m.FileName ?? "";
                     if (!path.StartsWith(game, StringComparison.OrdinalIgnoreCase)) continue;
