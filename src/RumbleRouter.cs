@@ -1,8 +1,8 @@
 // Per-player rumble (PS1: each DualShock rumbled for its own character).
-// FUN_8E320(type, flags, hit, attacker, victim) applies a hit and requests rumble (Rva.RumbleFrames / Strength)
-// when the attacker or the victim is a party member and rumble is on in the game's options. The per-frame system
-// loop then plays that request on player 1 only. We let the game decide whether to rumble, then hand requests
-// caused by players 2-4's characters to their own controllers.
+// FUN_8E320(type, flags, hit, attacker, victim) applies a hit. At its end it requests rumble (strength 0.6, 6 frames)
+// when rumble is on in the game's options and the attacker - else the victim - is the party character in command
+// block 0 (actor+0x56 = block index): player 1's. Players 2-4's characters (blocks 1-3) never get one. We leave player
+// 1's to the game and apply the same rule to blocks 1-3, on that player's own controller.
 using System;
 using System.Runtime.InteropServices;
 using HarmonyLib;
@@ -29,28 +29,25 @@ namespace EterniaCoop
             Plugin.Log.LogMessage("Per-player rumble hooked.");
         }
 
+        const float Strength = 0.6f;   // the game's own (0x3F19999A, checked by Features.Rumble)
+
         // Battle thread: decide only; the controllers are driven from Update.
         static void Hook(int type, uint flags, IntPtr hit, IntPtr attacker, IntPtr victim)
         {
-            // Same priority as the game: the attacker's rumble if a party member hit, else the victim's.
-            int slot = -1;
+            // The game skips the whole hit while the battle is paused, rumble included.
+            bool applies = Marshal.ReadByte(Native.At(Rva.BattleFlags)) == 0;
+            original(type, flags, hit, attacker, victim);   // player 1's rumble stays the game's
+            if (!applies) return;
             try
             {
-                if (attacker != IntPtr.Zero && Marshal.ReadByte(attacker, Actor.Inactive) == 0) slot = Battle.PartySlot(attacker);
-                if (slot < 0 && victim != IntPtr.Zero && Marshal.ReadByte(victim, Actor.Inactive) == 0) slot = Battle.PartySlot(victim);
+                IntPtr options = Marshal.ReadIntPtr(Native.At(Rva.GameOptions));
+                if (options == IntPtr.Zero || Marshal.ReadByte(options, 0x21) == 0) return;   // rumble off in the options
+                // Same priority as the game: the attacker if a party member hit, else the victim.
+                int slot = attacker != IntPtr.Zero ? Battle.PartySlot(attacker) : -1;
+                if (slot < 0 && victim != IntPtr.Zero) slot = Battle.PartySlot(victim);
+                if (slot >= 1 && slot <= 3 && Players.HasDevice[slot]) pending[slot] = Strength;
             }
-            catch { slot = -1; }
-
-            IntPtr frames = Native.At(Rva.RumbleFrames);
-            short before = Marshal.ReadInt16(frames);
-            Marshal.WriteInt16(frames, 0);
-            original(type, flags, hit, attacker, victim);
-            short after = Marshal.ReadInt16(frames);
-
-            if (after == 0) { Marshal.WriteInt16(frames, before); return; }   // the game didn't ask for rumble
-            if (slot < 1 || slot > 3 || !Players.HasDevice[slot]) return;     // player 1's character: unchanged
-            Marshal.WriteInt16(frames, before);                                // not player 1's hit
-            pending[slot] = Math.Max(pending[slot], Native.ReadFloat(Native.At(Rva.RumbleStrength)));
+            catch { }
         }
 
         // Main thread, every frame.

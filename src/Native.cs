@@ -36,8 +36,8 @@ namespace EterniaCoop
         public const int BuildPad = 0x19DBC0;         // FUN_19DBC0(pad, rate, flag): input object (player 1) -> PSP pad
         public const int ApplyHit = 0x8E320;          // FUN_8E320(type, flags, hit, attacker, victim)
 
-        // Rumble request read by the per-frame system loop (FUN_4DF60) and played on player 1.
-        public const int RumbleFrames = 0x862E72, RumbleStrength = 0x862E78;
+        // Game options object (pointer); +0x21 = rumble on.
+        public const int GameOptions = 0x6449E0;
     }
 
     // Battle actor field offsets.
@@ -45,7 +45,7 @@ namespace EterniaCoop
     {
         public const int Kind = 0x3C;       // short: 1 = character
         public const int Side = 0x51;       // byte: 0 = party, 1 = enemy
-        public const int Inactive = 0x56;   // byte: non-zero when the game skips rumble for this actor
+        public const int Block = 0x56;      // byte: command block index (0 = player 1's); the PSP port rumbles block 0 only
         public const int Control = 0x57;    // byte: 0 Auto, 1 Semi-Auto (same values as Rva.SlotModes)
         public const int CmdBlock = 0xF0;   // pointer to this actor's command block (Rva.CmdBlocks + slot * CmdSize)
         public const int X = 0x10, Y = 0x12;

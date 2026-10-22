@@ -57,7 +57,7 @@ deliberately left locked.
 | Battle menu for everyone | `Players.cs`, `Plugin.cs`, `CoopBattleInput.cs` | The menu button (command bit `0x10`) in any slot's block opens the battle menu and records the owner in `0x12CEB8C` (block + 1); `0x12CEB7A` bit 0 = menu open / paused (Start pauses with no owner). The icon row (`FUN_10F770`) reads the owner's block (+8 pressed buttons/D-pad, +0 held dirs), the submenus read player 1's pad. Players 2-4's pads lack menu latches (helpers are player 1-only), so while the menu is open `Players.ShareWithPlayer1` gives player 1 every device and the hook copies block 0 into the owner's block (others cleared, no pad swapping). |
 | Device assignment | `Players.cs` | Once a second: `SetInputDevices` on each `UgxInputPlayer` (keyboard+mouse to `KeyboardPlayer`, controllers in deviceId order). Players without a device get zeroed input (`InputPatches.cs`) - otherwise an empty device list listens to every device and mirrors player 1. |
 | Slot modes follow controllers | `SlotModes.cs` | Writes `JoinMode`/0 to `0x11CAD38+slot` when a player gains/loses a device or the party changes (save load). Menu choices in between are left alone. |
-| Per-player rumble | `RumbleRouter.cs` | Detour on `FUN_8E320(type, flags, hit, attacker, victim)`. The game requests rumble (`0x862E72` frames, `0x862E78` strength) when the attacker - else the victim - is a party member and rumble is enabled. If that actor is player 2-4's, cancel the player-1 request and call `UgxInputManager.SetVibration(strength, player)` / `StopVibration` from `Update`. |
+| Per-player rumble | `RumbleRouter.cs` | Detour on `FUN_8E320(type, flags, hit, attacker, victim)`. At its end the game requests rumble (strength 0.6, 6 frames, played on player 1) only when the option `[0x6449E0]+0x21` is on and the attacker - else the victim - is the party actor in command block 0 (`+0x56 == 0`): players 2-4's characters never rumble. The hook leaves that alone and applies the same rule to blocks 1-3 (skipped while paused, like the game): `UgxInputManager.SetVibration(0.6, player)` / `StopVibration`, queued for `Update`. |
 | Compatibility check | `Compatibility.cs`, `Features.cs` | SHA-256 of `GameNative.dll` vs `KnownSha256` only decides the label (and, with `StrictVersionCheck`, whether to stay off). The real gate is `Features.Check`, run in the `Initialize` prefix before anything is patched: each feature (Core, KeepModes, MenuTab, CoopBattle, Rumble) lists every instruction it patches or hooks plus one RIP-relative instruction per data address it uses, and is on only if all match. Everything needs Core. `Native.Patch` still re-checks each site. |
 | Watermark | `Plugin.cs` | IMGUI label, top-right, main menu only: hidden while the area id at `0x11CAFC4` is non-zero (it is 0 on the title screen; the party list is *not* empty there - it holds Reid). |
 
@@ -103,7 +103,7 @@ The build uses the .NET Framework `csc.exe` that ships with Windows, so the code
 | `0x1121E0` | battle command builder (pad → slot 0 block) |
 | `0xD2C80` | battle main; actor loop over 13 actors, handler table `0x4E8C60[actor+0x57]` |
 | `0x84210` | battle results (writes modes back, resets slots 1-3) |
-| `0x8E320` | apply hit (rumble request) |
+| `0x8E320` | apply hit (rumble decision at its end, `0x8E895`) |
 | `0x228AD0` / `0x224920` | Skills menu input / draw |
 | `0xD6420` | battle camera scroll from x: `-(x >> 4)`, clamped to the field; stored at `0x12CEAB8` |
 | `0x11CB80` / `0x1A07D0` | PS1 GTE-style object transform / perspective projection |
@@ -115,11 +115,13 @@ The build uses the .NET Framework `csc.exe` that ships with Windows, so the code
 | `0x111A674` | Skills menu: selected character |
 | `0x12CEBA0` | battle command blocks (0x20 per slot) |
 | `0x12CECD8` | pointer to battle actors (13 × 0x248) |
-| `0x862E72` / `0x862E78` | rumble request frames / strength |
+| `0x862E72` / `0x862E78` | rumble request frames / strength (player 1) |
+| `0x6449E0` | game options object (pointer); `+0x21` rumble on |
+| `0x12CEB7A` / `0x12CEB8C` | battle flags (bit 0 menu open / paused) / battle menu owner (block + 1) |
 | `0x85FF78` / `0x85FF70` / `0x85FF68` | callback slots: GetInputInfo / GetStickInfo / InitializeInput |
 
 Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is 320 px wide), `+0x3C` kind
-(1 = character), `+0x51` side (0 party), `+0x56` skip-rumble flag, `+0x57` control mode, `+0xF0` command block.
+(1 = character), `+0x51` side (0 party), `+0x56` command block index (0 = player 1's), `+0x57` control mode, `+0xF0` command block.
 
 ## Lessons learned (don't repeat these)
 

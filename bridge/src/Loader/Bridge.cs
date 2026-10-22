@@ -133,7 +133,8 @@ namespace BepInEx6Bridge
         }
 
         // BepInEx 6 plugins ask for BepInEx.Core / BepInEx.Unity.Mono 6.0 and newer library versions (0Harmony 2.10):
-        // answer with the stand-ins and whatever version is already loaded.
+        // answer with the stand-ins and whatever version is already loaded. Other lookups are left alone unless a
+        // bridged plugin made them, so other mods' assembly resolution behaves exactly as without the bridge.
         static Assembly Resolve(object sender, ResolveEventArgs args)
         {
             string name = new AssemblyName(args.Name).Name;
@@ -141,6 +142,8 @@ namespace BepInEx6Bridge
             if (name == "BepInEx.Unity.Mono") return shimMono;
             Assembly a;
             if (loadedPlugins.TryGetValue(name, out a)) return a;
+            bool fromBridged = args.RequestingAssembly != null && loadedPlugins.ContainsValue(args.RequestingAssembly);
+            if (name != "0Harmony" && !fromBridged) return null;
             foreach (var loaded in AppDomain.CurrentDomain.GetAssemblies())
                 if (loaded.GetName().Name == name) return loaded;
             return null;
