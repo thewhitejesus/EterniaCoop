@@ -46,6 +46,8 @@ namespace EterniaCoop
         // Battle camera: zoom setting (short, 0x200 closest .. 0x29C farthest; copied to the zoom target each frame
         // while the camera mode is 0) and camera mode (byte: 0 normal, 1, >= 2 scripted - spells, mystic artes).
         public static int CamZoom = 0x12CEB78, CamMode = 0x12CEB7F;
+        // Battle camera scroll (short): -(centre x >> 4), clamped to the field (FUN_D6420's result).
+        public static int CamScroll = 0x12CEAB8;
     }
 
     // Battle actor field offsets.

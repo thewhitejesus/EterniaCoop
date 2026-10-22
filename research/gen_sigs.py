@@ -63,6 +63,7 @@ SITES = [
     # (0 normal, >= 2 scripted: spells, mystic artes).
     ("CamTargetX",     "Camera", 0xD3BA3, "code"),
     ("CamZoom",        "Camera", 0xD3BBA, "data", 0x12CEB78, 0),
+    ("CamScroll",      "Camera", 0xD3BAD, "data", 0x12CEAB8, 0),     # scroll = -(centre x >> 4), stored after FUN_D6420
     ("CamMode",        "Camera", 0xD3B28, "data", 0x12CEB7F, 0),
     # Rumble
     ("ApplyHit",       "Rumble", 0x8E320, "func"),

@@ -25,7 +25,7 @@ namespace EterniaCoop
             "CmdBlocks", "ActorArray",
         };
 
-        static readonly string[] CameraSites = { "CamTargetX", "CamZoom", "CamMode", "BattleFlags", "CmdBlocks", "ActorArray" };
+        static readonly string[] CameraSites = { "CamTargetX", "CamZoom", "CamScroll", "CamMode", "BattleFlags", "CmdBlocks", "ActorArray" };
 
         public static bool Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera;
         static bool checkedOnce;
@@ -66,6 +66,7 @@ namespace EterniaCoop
             if (Sites.Resolved("GameOptions")) Rva.GameOptions = Sites.Get("GameOptions").Target;
             if (Sites.Resolved("CamZoom")) Rva.CamZoom = Sites.Get("CamZoom").Target;
             if (Sites.Resolved("CamMode")) Rva.CamMode = Sites.Get("CamMode").Target;
+            if (Sites.Resolved("CamScroll")) Rva.CamScroll = Sites.Get("CamScroll").Target;
             if (Sites.Resolved("BattleCommands")) Rva.BattleCommands = Sites.Rva("BattleCommands", 0);
             if (Sites.Resolved("BuildPad")) Rva.BuildPad = Sites.Rva("BuildPad", 0);
             if (Sites.Resolved("ApplyHit")) Rva.ApplyHit = Sites.Rva("ApplyHit", 0);

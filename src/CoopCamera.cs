@@ -29,8 +29,9 @@ namespace EterniaCoop
         static IntPtr stub, active, centre;   // stub data: active (byte), centre x (ushort, world units = 1/16 px)
         static bool installed;
         static long lastActors;
-        static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait;
-        static bool tracking;
+        static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait, lastMid, leadVel;
+        static bool tracking, resume;
+        const float LeadMax = 20f;         // look-ahead cap, PS1 pixels
 
         // Critically damped spring (no overshoot, no snap): moves value toward target, settling in about smoothTime
         // seconds. One step per battle frame (60 fps).
@@ -119,7 +120,9 @@ namespace EterniaCoop
             if (humans < 2)
             {
                 // One player (or a scripted / paused camera): the game's camera. Ease a zoom we changed back first.
+                // When we take over again, start from wherever the camera is by then (no jump back after a spell).
                 Marshal.WriteByte(active, 0);
+                resume = true;
                 if (tracking && enabled)
                 {
                     zoom = Spring(zoom, baseZoom, ref zoomVel, 0.5f);
@@ -129,11 +132,21 @@ namespace EterniaCoop
                 return;
             }
 
-            if (!tracking)
+            float rawMid = (min + max) / 2f;
+            if (!tracking || resume)
             {
-                x = (min + max) / 2f; zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom));
-                xVel = zoomVel = 0; lastSpread = (max - min) / 16f; tracking = true;
+                // Pick up the camera where it actually is (the game's scroll: -(x >> 4)), so taking over - at the
+                // start, after a spell's camera, when a second player joins - glides instead of jumping.
+                x = -Marshal.ReadInt16(Native.At(Rva.CamScroll)) * 16f + 8f;
+                xVel = 0; lastMid = rawMid; leadVel = 0;
+                if (!tracking) { zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom)); zoomVel = 0; lastSpread = (max - min) / 16f; }
+                tracking = true; resume = false;
             }
+
+            // Look-ahead: when the players move together, lead a little in that direction (capped, smoothed).
+            leadVel += ((rawMid - lastMid) * 60f - leadVel) * 0.1f;   // world units per second
+            lastMid = rawMid;
+            float lead = Math.Max(-LeadMax * 16f, Math.Min(LeadMax * 16f, leadVel * 0.25f));
 
             // Zoom to fit everyone (plus Edge on both sides), within the allowed range; small spread changes ignored.
             float spread = (max - min) / 16f;
@@ -143,9 +156,11 @@ namespace EterniaCoop
 
             // Centre between them. If they can't all fit even at the limit, keep player 1's character in view
             // instead of centring on empty ground between characters who are both off-screen.
-            float mid = (min + max) / 2f;
+            float mid = rawMid + lead;
             float halfView = ViewWidth(Math.Min(limit, Math.Max(zoom, wantZoom))) / 2f * 16f;   // world units
             float room = halfView - Edge * 16f;
+            // Never let the lead (or a too-wide spread) push anyone out: keep everyone in reach, player 1 above all.
+            mid = Math.Max(max - room, Math.Min(min + room, mid));
             if (Math.Abs(leaderX - mid) > room) mid = leaderX + (mid > leaderX ? room : -room);
 
             // Zoom out promptly (nobody slips off screen), zoom back in slowly and only after the players have stayed
