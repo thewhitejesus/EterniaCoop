@@ -22,6 +22,8 @@ namespace EterniaCoop
         public const int ActorArray = 0x12CECD8, ActorSize = 0x248, ActorCount = 13;
         // Battle state flags (byte); bit 0 = battle menu open / paused (set by Start in FUN_D2C80).
         public const int BattleFlags = 0x12CEB7A;
+        // Battle menu owner (byte): command block index + 1 of whoever opened it with the menu button, 0 = none.
+        public const int MenuOpener = 0x12CEB8C;
 
         // Party (menu/save side): member ids (4 x short) and control mode per slot (byte: 0 Auto, 1 Semi-Auto).
         public const int PartyIds = 0x11CAD10, SlotModes = 0x11CAD38;

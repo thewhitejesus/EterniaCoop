@@ -55,12 +55,20 @@ namespace EterniaCoop
                 if (obj == IntPtr.Zero) return;
                 int players = Marshal.ReadInt32(obj, 0x10);
 
-                // Battle menu open (paused): it reads only the global pad, i.e. player 1 - who meanwhile listens to every
-                // device (Players.ShareWithPlayer1). Leave the pad alone so the menu never catches player 2-4's pad
-                // mid-swap, and give slots 2-4 no input until it closes.
+                // Battle menu open (paused). Like the PS1, the menu belongs to whoever opened it (Rva.MenuOpener): its
+                // icon row reads the opener's command block (FUN_10F770: +8 pressed buttons/D-pad, +0 held directions),
+                // while the submenus read player 1's pad. Players 2-4's own pads lack the button latches menus need
+                // (those helpers run for player 1 only - the spinning-camera fix), but player 1 meanwhile listens to
+                // every device (Players.ShareWithPlayer1), so the opener's block gets player 1's: anyone's controller
+                // works, with clean presses. No pad swapping while the menu is up; the other blocks stay empty.
                 if ((Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0)
                 {
-                    for (int p = 1; p < 4; p++) Native.Clear(Battle.CmdBlock(p), CmdButtons);
+                    int opener = Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1;   // -1: paused with Start, no owner
+                    for (int p = 1; p < 4; p++)
+                    {
+                        if (p == opener) Native.Copy(Battle.CmdBlock(0), Battle.CmdBlock(p), CmdButtons);
+                        else Native.Clear(Battle.CmdBlock(p), CmdButtons);
+                    }
                     return;
                 }
 
