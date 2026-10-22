@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Steam Deck / Linux (Proton) instructions: the `WINEDLLOVERRIDES="winhttp=n,b" %command%` launch option BepInEx
+  needs there, plus Deck controller notes. The log says when the mod runs under Wine/Proton. Not tested on a Deck yet.
+
 ## 1.1.2 - 2026-10-21
 - Works with **Guests from Phantasia** without a shortcut clash: it toggles its guest with L3+R3, so while it's
   installed the controller manager's controller shortcut is **LB+RB+Back** instead. The label and manager say so.

@@ -53,7 +53,24 @@ namespace EterniaCoop
         static extern IntPtr GetModuleHandle(string name);
         [DllImport("kernel32")]
         static extern bool VirtualProtect(IntPtr addr, UIntPtr size, uint newProtect, out uint oldProtect);
+        [DllImport("kernel32", CharSet = CharSet.Ansi)]
+        static extern IntPtr GetProcAddress(IntPtr module, string name);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate IntPtr WineVersionFn();
         const uint PAGE_EXECUTE_READWRITE = 0x40;
+
+        // Wine / Proton version (e.g. "9.0") when the game runs on Linux or a Steam Deck, null on Windows.
+        // Wine's ntdll exports wine_get_version; Windows' doesn't.
+        public static string WineVersion()
+        {
+            try
+            {
+                IntPtr fn = GetProcAddress(GetModuleHandle("ntdll.dll"), "wine_get_version");
+                if (fn == IntPtr.Zero) return null;
+                var get = (WineVersionFn)Marshal.GetDelegateForFunctionPointer(fn, typeof(WineVersionFn));
+                return Marshal.PtrToStringAnsi(get()) ?? "?";
+            }
+            catch { return null; }
+        }
 
         static long moduleBase;
 

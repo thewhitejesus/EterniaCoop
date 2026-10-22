@@ -56,12 +56,26 @@ per-character input slots - this mod fills them again.
 3. Connect controllers. Player 1 keeps the keyboard and the first controller; controllers 2–4 become players 2–4.
    To change who is who, open the controller manager (below).
 
+## Steam Deck / Linux (Proton)
+
+Not tested yet - reports welcome. The mod itself has nothing Windows-only beyond what Proton provides; the one
+extra step is the one every BepInEx mod needs on Proton:
+
+1. Install as above (on a Deck: Desktop Mode → Steam → right-click the game → Manage → Browse local files).
+2. Steam → right-click the game → **Properties** → **Launch Options**, enter:
+   `WINEDLLOVERRIDES="winhttp=n,b" %command%`
+   Without it Proton ignores BepInEx's `winhttp.dll` and the mod silently doesn't load (no label on the main menu).
+3. Leave Steam Input **on** for the Deck's own controls. Extra controllers (USB or Bluetooth) become players 2–4.
+4. No keyboard: open the controller manager by holding **L3 + R3** (both sticks pressed in).
+
+`BepInEx\LogOutput.log` says "Running under Wine/Proton" when the mod loaded there.
+
 ## Controller manager
 
 Open with **F1**, or hold **L3 + R3** (both sticks pressed in) on any controller - handy for Parsec guests.
 Both shortcuts can be changed in the settings (`ManagerKey`, `ManagerControllerShortcut`).
-With **100% Drop and Steal Rate** installed (it opens its own menu with F1), the key is **F8** instead; with **Guests from
- Phantasia** installed (it toggles its guest with L3 + R3), the controller shortcut is **LB + RB + Back**.
+With **100% Drop and Steal Rate** installed (it opens its own menu with F1), the key is **F8** instead; with
+**Guests from Phantasia** installed (it toggles its guest with L3 + R3), the controller shortcut is **LB + RB + Back**.
 The game ignores input while it's open.
 
 - **Controller:** LB / RB or D-pad left/right moves *that* controller to the previous/next player. Back resets everything to automatic.
@@ -78,6 +92,7 @@ show up on the host PC as extra controllers and become players 2–4. Third-part
 Together (e.g. "Remote Play Whatever") may also work but are not tested.
 
 - If a controller shows up twice, turn off Steam Input for the game (Steam → game Properties → Controller).
+  Not on a Steam Deck, where the built-in controls need it.
 - Windows supports up to 4 Xbox-style controllers at once: the host's plus 3 guests.
 
 ## Settings
@@ -118,7 +133,8 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 - **Label says "off: game code not recognized"** - the game was updated in a way the mod can't handle yet. Wait for
   a mod update; the game runs unmodified until then.
 - **No label at all** - BepInEx isn't loading. Check that `winhttp.dll` is next to the game's .exe and that your
-  antivirus didn't remove it. `BepInEx\LogOutput.log` shows what happened.
+  antivirus didn't remove it. `BepInEx\LogOutput.log` shows what happened. On Steam Deck / Linux, add the launch
+  option from the Steam Deck section.
 - **Player 2's character stands still** - that slot is on Semi-Auto but player 2 has no controller assigned.
   Check the controller, or set the character back to Auto in the Skills menu.
 - **Saves:** the mod changes nothing in save files except the party members' Semi-Auto/Auto setting, which the

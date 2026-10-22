@@ -30,6 +30,8 @@ namespace EterniaCoop
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
             Log.LogInfo(Name + " " + Version + (Compatibility.Ok ? "" : " (inactive: " + Compatibility.Problem + ")") +
                 ". Players: " + Settings.PlayerCount.Value + ", keyboard -> player " + (Settings.KeyboardPlayer.Value + 1) + ".");
+            string wine = Native.WineVersion();
+            if (wine != null) Log.LogInfo("Running under Wine/Proton " + wine + " (Linux or Steam Deck).");
         }
 
         void Update()
