@@ -14,7 +14,7 @@ namespace EterniaCoop
             Players.InputManager = __instance;
             int players = Settings.PlayerCount.Value;
             if (Compatibility.Ok && players >= 2 && players <= 4) Features.Check();
-            if (!Compatibility.Ok || players < 2 || players > 4)
+            if (!Compatibility.Ok || !Features.Core || players < 2 || players > 4)
             {
                 Plugin.Log.LogMessage("UgxInputManager.Initialize(playerNum=" + playerNum + "): co-op not active");
                 return;

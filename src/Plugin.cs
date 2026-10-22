@@ -54,9 +54,11 @@ namespace EterniaCoop
             ControllerManager.Draw();
             if (!Settings.ShowWatermark.Value) return;
             // Main menu only: hide once a map is loaded (the area id is 0 on the title screen).
-            if (Native.Base != 0 && System.Runtime.InteropServices.Marshal.ReadInt32(Native.At(Rva.Area)) != 0) return;
+            // Rva.Area is only known to be right on the supported build or once Features has verified it.
+            bool areaKnown = Native.Base != 0 && (Compatibility.Exact || Features.Core);
+            if (areaKnown && System.Runtime.InteropServices.Marshal.ReadInt32(Native.At(Rva.Area)) != 0) return;
             if (watermarkStyle == null)
-                watermarkStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperRight, fontStyle = FontStyle.Bold };
+                watermarkStyle = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.UpperRight, fontStyle = FontStyle.Bold, wordWrap = false };
             watermarkStyle.fontSize = Mathf.Max(12, Screen.height / 60);
 
             string text = Name + " " + Version;
@@ -67,7 +69,8 @@ namespace EterniaCoop
             if (CoopActive && Settings.AutoAssignControllers.Value) text += "  ·  " + ControllerManager.OpenKey() + ": controllers";
             // Margin in proportion to the window: the visible area can be a little narrower than Screen.width.
             float margin = Screen.width * 0.03f;
-            var r = new Rect(Screen.width - margin - 600, Screen.height * 0.012f, 600, watermarkStyle.fontSize * 2);
+            float width = Screen.width - 2 * margin;   // status text can be long ("partly on (off: ...)")
+            var r = new Rect(margin, Screen.height * 0.012f, width, watermarkStyle.fontSize * 2);
             GUI.color = new Color(0, 0, 0, 0.5f);
             GUI.Label(new Rect(r.x + 1, r.y + 1, r.width, r.height), text, watermarkStyle);
             GUI.color = Compatibility.Ok ? new Color(1, 1, 1, 0.55f) : new Color(1, 0.55f, 0.45f, 0.85f);

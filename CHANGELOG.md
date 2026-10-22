@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- Co-op stays off unless the game code check has actually confirmed the input code (it could be skipped before
+  in theory).
+- The main-menu label uses the full screen width and no longer wraps, so a long "partly on (off: ...)" status fits.
+- The label only reads the game's area id once that address is confirmed, so an unrecognized game version can't
+  make it read the wrong memory.
+
 ## 1.1.1 - 2026-10-21
 - Works with other mods that change the game's code, and with small game updates. Instead of switching off whenever
   `GameNative.dll` differs from the supported build, each feature (co-op players, battle input, rumble, Skills menu
