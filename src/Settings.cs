@@ -43,7 +43,8 @@ namespace EterniaCoop
                 "With two or more human players in battle, centre the camera between them and zoom out as they spread " +
                 "apart (back in as they come together). Off: the game's camera, which follows one character.");
             CoopCameraMaxZoom = c.Bind("Coop", "CoopCameraMaxZoom", 0x29C,
-                "How far the co-op camera may zoom out: 512 (no zoom) to 668 (the game's farthest, same as zooming out by hand).");
+                "How far the co-op camera may zoom out: 512 (no zoom), 668 (the game's own farthest, same as zooming out " +
+                "by hand) up to 1040 (the whole battlefield on screen - beyond the game's own range, experimental).");
             DeviceAssignments = c.Bind("Coop", "DeviceAssignments", "",
                 "Saved by the in-game controller manager (F1, or hold L3 + R3): device path = player (0-3), separated by ;. " +
                 "Devices not listed follow the automatic order. Clear it to go back to fully automatic.");

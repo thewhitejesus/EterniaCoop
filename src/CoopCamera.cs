@@ -14,15 +14,36 @@ namespace EterniaCoop
 {
     static class CoopCamera
     {
-        const short ZoomMin = 0x200, ZoomMax = 0x29C;   // the game's own range (manual zoom in the battle menu)
-        const float ViewWidth = 320f;                    // battle view width in PS1 pixels at ZoomMin
-        const float Edge = 48f;                          // room kept around the outermost players, PS1 pixels
+        // Zoom: 0x200 = the game's closest. FUN_D6420's clamp shows the relation: at zoom z the view is
+        // 320 + 2 * (z - 0x200) / 3 PS1 pixels wide, and the field is 0x160 + 320 = 672 wide (the camera centre ranges
+        // over 0..0x160 at zoom 0x200). The game's own limit (manual zoom) is 0x29C, a 424-pixel view; 0x410 shows
+        // the whole field.
+        const short ZoomMin = 0x200, ZoomGameMax = 0x29C, ZoomFullField = 0x410;
+        const float FieldWidth = 672f;
+        const float Edge = 40f;            // room kept beyond the outermost players, PS1 pixels
+        const float DeadZone = 6f;         // ignore spread changes smaller than this (no twitching), PS1 pixels
+
+        static float ViewWidth(float z) { return 320f + 2f * (z - ZoomMin) / 3f; }
+        static float ZoomFor(float width) { return ZoomMin + 1.5f * (width - 320f); }
 
         static IntPtr stub, active, centre;   // stub data: active (byte), centre x (ushort, world units = 1/16 px)
         static bool installed;
         static long lastActors;
-        static float zoom, x, baseZoom;
+        static float zoom, x, baseZoom, zoomVel, xVel, lastSpread;
         static bool tracking;
+
+        // Critically damped spring (no overshoot, no snap): moves value toward target, settling in about smoothTime
+        // seconds. One step per battle frame (60 fps).
+        static float Spring(float value, float target, ref float velocity, float smoothTime)
+        {
+            const float dt = 1f / 60f;
+            float omega = 2f / smoothTime, k = omega * dt;
+            float exp = 1f / (1f + k + 0.48f * k * k + 0.235f * k * k * k);
+            float change = value - target;
+            float temp = (velocity + omega * change) * dt;
+            velocity = (velocity - omega * temp) * exp;
+            return target + (change + temp) * exp;
+        }
 
         // Battle thread (from the battle input hook, once GameNative's camera sites are resolved).
         public static void Install()
@@ -81,7 +102,7 @@ namespace EterniaCoop
 
             bool enabled = Settings.CoopCamera.Value && Marshal.ReadByte(Native.At(Rva.CamMode)) == 0 &&
                 (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0;
-            int min = int.MaxValue, max = int.MinValue, humans = 0;
+            int min = int.MaxValue, max = int.MinValue, humans = 0, leaderX = 0;
             if (enabled)
                 for (int i = 0; i < Rva.ActorCount; i++)
                 {
@@ -91,6 +112,7 @@ namespace EterniaCoop
                     int ax = Marshal.ReadInt16(a, Actor.X);
                     if (ax < min) min = ax;
                     if (ax > max) max = ax;
+                    if (slot == 0) leaderX = ax;
                     humans++;
                 }
 
@@ -100,19 +122,34 @@ namespace EterniaCoop
                 Marshal.WriteByte(active, 0);
                 if (tracking && enabled)
                 {
-                    zoom += (baseZoom - zoom) * 0.08f;
-                    if (Math.Abs(zoom - baseZoom) < 1f) { zoom = baseZoom; tracking = false; }
-                    Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)zoom);
+                    zoom = Spring(zoom, baseZoom, ref zoomVel, 0.5f);
+                    if (Math.Abs(zoom - baseZoom) < 0.5f) { zoom = baseZoom; tracking = false; }
+                    Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(zoom));
                 }
                 return;
             }
 
-            float mid = (min + max) / 2f, spread = (max - min) / 16f;
-            if (!tracking) { x = mid; zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom)); tracking = true; }
-            float limit = Math.Min(ZoomMax, Math.Max(ZoomMin, Settings.CoopCameraMaxZoom.Value));
-            float want = Math.Max(baseZoom, Math.Min(limit, ZoomMin * (spread + 2 * Edge) / ViewWidth));
-            x += (mid - x) * 0.15f;
-            zoom += (want - zoom) * 0.06f;
+            if (!tracking)
+            {
+                x = (min + max) / 2f; zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom));
+                xVel = zoomVel = 0; lastSpread = (max - min) / 16f; tracking = true;
+            }
+
+            // Zoom to fit everyone (plus Edge on both sides), within the allowed range; small spread changes ignored.
+            float spread = (max - min) / 16f;
+            if (Math.Abs(spread - lastSpread) > DeadZone) lastSpread = spread;
+            float limit = Math.Max(ZoomMin, Math.Min(ZoomFullField, Settings.CoopCameraMaxZoom.Value));
+            float wantZoom = Math.Max(baseZoom, Math.Min(limit, ZoomFor(lastSpread + 2 * Edge)));
+
+            // Centre between them. If they can't all fit even at the limit, keep player 1's character in view
+            // instead of centring on empty ground between characters who are both off-screen.
+            float mid = (min + max) / 2f;
+            float halfView = ViewWidth(Math.Min(limit, Math.Max(zoom, wantZoom))) / 2f * 16f;   // world units
+            float room = halfView - Edge * 16f;
+            if (Math.Abs(leaderX - mid) > room) mid = leaderX + (mid > leaderX ? room : -room);
+
+            x = Spring(x, mid, ref xVel, 0.3f);
+            zoom = Spring(zoom, wantZoom, ref zoomVel, 0.45f);
             Marshal.WriteInt16(centre, (short)Math.Round(x));
             Marshal.WriteByte(active, 1);
             Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(zoom));
