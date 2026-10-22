@@ -58,6 +58,12 @@ SITES = [
     ("MenuOpener",     "CoopBattle", 0x110130, "data", 0x12CEB8C, 0),
     ("CmdBlocks",      "CoopBattle", 0x112204, "data", 0x12CEBA0, 0),
     ("ActorArray",     "CoopBattle", 0xD3090, "data", 0x12CECD8, 0),
+    # Camera (co-op camera): the battle camera's normal path loads the followed actor's x here, then calls the
+    # scroll function (FUN_D6420); the zoom setting is copied to the zoom target right after. 0x12CEB7F = camera mode
+    # (0 normal, >= 2 scripted: spells, mystic artes).
+    ("CamTargetX",     "Camera", 0xD3BA3, "code"),
+    ("CamZoom",        "Camera", 0xD3BBA, "data", 0x12CEB78, 0),
+    ("CamMode",        "Camera", 0xD3B28, "data", 0x12CEB7F, 0),
     # Rumble
     ("ApplyHit",       "Rumble", 0x8E320, "func"),
     ("HitPaused",      "Rumble", 0x8E32A, "data", 0x12CEB7A, 0),

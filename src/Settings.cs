@@ -7,7 +7,8 @@ namespace EterniaCoop
     {
         // [Coop]
         public static ConfigEntry<int> PlayerCount, KeyboardPlayer, JoinMode;
-        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble;
+        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera;
+        public static ConfigEntry<int> CoopCameraMaxZoom;
         public static ConfigEntry<float> RumbleSeconds;
         public static ConfigEntry<string> DeviceAssignments, ManagerKey, ManagerControllerShortcut;
         // [Display]
@@ -38,6 +39,11 @@ namespace EterniaCoop
             PerPlayerRumble = c.Bind("Coop", "PerPlayerRumble", true,
                 "Rumble the controller of the character that hit or got hit (players 2-4), like the PS1. Uses the game's rumble setting.");
             RumbleSeconds = c.Bind("Coop", "RumbleSeconds", 0.15f, "How long a hit rumbles on players 2-4's controllers.");
+            CoopCamera = c.Bind("Coop", "CoopCamera", true,
+                "With two or more human players in battle, centre the camera between them and zoom out as they spread " +
+                "apart (back in as they come together). Off: the game's camera, which follows one character.");
+            CoopCameraMaxZoom = c.Bind("Coop", "CoopCameraMaxZoom", 0x29C,
+                "How far the co-op camera may zoom out: 512 (no zoom) to 668 (the game's farthest, same as zooming out by hand).");
             DeviceAssignments = c.Bind("Coop", "DeviceAssignments", "",
                 "Saved by the in-game controller manager (F1, or hold L3 + R3): device path = player (0-3), separated by ;. " +
                 "Devices not listed follow the automatic order. Clear it to go back to fully automatic.");

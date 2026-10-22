@@ -25,7 +25,9 @@ namespace EterniaCoop
             "CmdBlocks", "ActorArray",
         };
 
-        public static bool Core, KeepModes, MenuTab, CoopBattle, Rumble;
+        static readonly string[] CameraSites = { "CamTargetX", "CamZoom", "CamMode", "BattleFlags", "CmdBlocks", "ActorArray" };
+
+        public static bool Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera;
         static bool checkedOnce;
 
         // Call once GameNative is loaded and before anything is patched.
@@ -43,6 +45,7 @@ namespace EterniaCoop
                 Agree("Co-op battle input", "Pad", "PadHeld");
             Rumble = Core && Verify("Per-player rumble", RumbleSites) &&
                 (!Sites.Resolved("BattleFlags") || Agree("Per-player rumble", "BattleFlags", "HitPaused"));
+            Camera = CoopBattle && Verify("Co-op camera", CameraSites);
             ApplyAddresses();
             Compatibility.Report(Core, Missing(), Sites.Moved);
         }
@@ -61,6 +64,8 @@ namespace EterniaCoop
             if (Sites.Resolved("BattleFlags")) Rva.BattleFlags = Sites.Get("BattleFlags").Target;
             else if (Sites.Resolved("HitPaused")) Rva.BattleFlags = Sites.Get("HitPaused").Target;
             if (Sites.Resolved("GameOptions")) Rva.GameOptions = Sites.Get("GameOptions").Target;
+            if (Sites.Resolved("CamZoom")) Rva.CamZoom = Sites.Get("CamZoom").Target;
+            if (Sites.Resolved("CamMode")) Rva.CamMode = Sites.Get("CamMode").Target;
             if (Sites.Resolved("BattleCommands")) Rva.BattleCommands = Sites.Rva("BattleCommands", 0);
             if (Sites.Resolved("BuildPad")) Rva.BuildPad = Sites.Rva("BuildPad", 0);
             if (Sites.Resolved("ApplyHit")) Rva.ApplyHit = Sites.Rva("ApplyHit", 0);
@@ -74,6 +79,7 @@ namespace EterniaCoop
             if (!MenuTab) off.Add("menu tab");
             if (!CoopBattle) off.Add("battle input");
             if (!Rumble) off.Add("rumble");
+            if (!Camera) off.Add("camera");
             return off;
         }
 

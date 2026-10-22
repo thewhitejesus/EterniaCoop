@@ -73,6 +73,13 @@ namespace EterniaCoop
                 }
 
                 ControlledSlots();
+                if (Features.Camera)
+                {
+                    CoopCamera.Install();   // once
+                    humans[0] = true;       // player 1's character
+                    for (int p = 1; p < 4; p++) humans[p] = wanted[p] && p < players;
+                    CoopCamera.Update(humans);
+                }
                 IntPtr pad = Native.At(Rva.Pad), cmd0 = Battle.CmdBlock(0);
                 for (int p = 1; p < players && p < 4; p++)
                 {
@@ -102,6 +109,7 @@ namespace EterniaCoop
         // menu setting mid-battle (the battle copies modes only at its start) and go Auto while their player has
         // no controller - so a dropped Parsec guest's character keeps fighting on AI.
         static readonly bool[] wanted = new bool[4];   // filled every frame (the hook never runs re-entrantly)
+        static readonly bool[] humans = new bool[4];   // slots the co-op camera keeps in view
 
         static void ControlledSlots()
         {

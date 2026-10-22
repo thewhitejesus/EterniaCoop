@@ -42,6 +42,10 @@ namespace EterniaCoop
 
         // Game options object (pointer); +0x21 = rumble on.
         public static int GameOptions = 0x6449E0;
+
+        // Battle camera: zoom setting (short, 0x200 closest .. 0x29C farthest; copied to the zoom target each frame
+        // while the camera mode is 0) and camera mode (byte: 0 normal, 1, >= 2 scripted - spells, mystic artes).
+        public static int CamZoom = 0x12CEB78, CamMode = 0x12CEB7F;
     }
 
     // Battle actor field offsets.
@@ -125,6 +129,26 @@ namespace EterniaCoop
             }
             Write(rva, to);
             return true;
+        }
+
+        [DllImport("kernel32")]
+        static extern IntPtr VirtualAlloc(IntPtr address, UIntPtr size, uint type, uint protect);
+        const uint MEM_COMMIT_RESERVE = 0x3000;
+
+        // Executable memory within reach of a 32-bit relative call from GameNative (for small code stubs). Tries
+        // 64 KB-aligned addresses just past the module's image, then just before it. IntPtr.Zero if none is free.
+        public static IntPtr AllocNear(int size)
+        {
+            if (Base == 0) return IntPtr.Zero;
+            long image = Marshal.ReadInt32(At(Marshal.ReadInt32(At(0x3C)) + 24 + 56));   // OptionalHeader.SizeOfImage
+            long after = (Base + image + 0xFFFF) & ~0xFFFFL;
+            for (long step = 0; step < 0x40000000L; step += 0x10000)
+                foreach (long at in new[] { after + step, (Base & ~0xFFFFL) - 0x10000 - step })
+                {
+                    IntPtr p = VirtualAlloc(new IntPtr(at), new UIntPtr((uint)size), MEM_COMMIT_RESERVE, PAGE_EXECUTE_READWRITE);
+                    if (p != IntPtr.Zero) return p;
+                }
+            return IntPtr.Zero;
         }
 
         public static IntPtr Alloc(int size)
