@@ -1,16 +1,16 @@
-## Eternia Co-op 1.2.2
+## Eternia Co-op 1.3.0
 
 Local 2–4 player co-op for **Tales of Eternia Remastered** - each controller drives its own party member in battle, like the PS1 original's multitap mode.
 
-**Download `EterniaCoop-1.2.2.zip`** below and extract it into the game folder (next to `Tales of Eternia Remastered.exe`). BepInEx and the BepInEx 6 Bridge are included. Updating: extract over the old files.
+**Download `EterniaCoop-1.3.0.zip`** below and extract it into the game folder (next to `Tales of Eternia Remastered.exe`). BepInEx and the BepInEx 6 Bridge are included. Updating: extract over the old files.
 
 ### What's new
-- **The battle menu works properly for players 2-4** (from 1.2.1, [#1](https://github.com/thewhitejesus/EterniaCoop/issues/1)): whoever opens it drives the whole menu with their own controller - D-pad, stick, confirm/cancel, camera pan, submenus - like on the PS1.
-- **Per-player rumble now actually works for players 2-4.** The game only ever asks for rumble for player 1's character, so players 2-4 never got any. The mod now applies the game's own rumble rule to their characters, on their own controllers. (Not yet tested on a second physical controller - reports welcome!)
-- **Steam Deck / Linux:** the zips now use standard paths. Earlier ones unpacked on Linux as files literally named `BepInEx\core\...`.
-- **BepInEx 6 Bridge 1.0.1:** it only steps in for the BepInEx 6 mods it runs; other mods behave exactly as without it.
+- **Survives game updates.** Every spot the mod uses in the game's code now has a code signature. When a game update moves code around, the mod finds each spot again by itself and the main menu says "adapted to a game update". It only accepts a spot when it's certain (found exactly, pointing at the right data); anything else stays off, so nothing is ever half-applied. The search takes about 0.2 seconds and only happens once per game version.
+  - Tested by searching every spot from scratch in the running game (all found, with other mods' hooks present) and against simulated updates that move code and data around.
+- **Plays nicer with other mods** that hook the game's code (like Guests from Phantasia and Uncropped Backgrounds): the signatures stay clear of the places mods usually hook.
+- **Lighter:** no memory allocations in the battle input code, and shortcut/mod checks run once a second instead of every frame.
 
-**Don't want co-op?** `BepInEx6Bridge-1.0.1.zip` is the bridge on its own (with BepInEx 5), for running BepInEx 6 mods (Uncropped Backgrounds, Fast Shutdown, Font Replacer) on BepInEx 5.
+Includes everything from 1.2.x: the battle menu works for whoever opens it, per-player rumble for players 2-4, Steam Deck-friendly zips, and the BepInEx 6 Bridge (`BepInEx6Bridge-1.0.1.zip` on its own, unchanged).
 
 ### Safety
 No internet access, telemetry or tracking. No game files are modified (all changes are in memory). Full source in this repository.
@@ -19,4 +19,4 @@ See the [README](https://github.com/thewhitejesus/EterniaCoop#readme) and the [C
 
 ### License and credits
 MIT - free to share, modify, fork and include in modpacks; keep the license and credits.
-Created by thewhitejesus1 with Claude (Anthropic) as co-developer. Built on BepInEx, HarmonyX, UnityDoorstop and MonoMod - see [CREDITS](https://github.com/thewhitejesus/EterniaCoop/blob/main/CREDITS.md). The bridge contains no BepInEx 6 code and is not affiliated with the BepInEx team or the authors of the mods it runs.
+Created by thewhitejesus1 with Claude (Anthropic) as co-developer. Built on BepInEx, HarmonyX, UnityDoorstop and MonoMod - see [CREDITS](https://github.com/thewhitejesus/EterniaCoop/blob/main/CREDITS.md).
