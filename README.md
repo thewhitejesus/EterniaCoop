@@ -60,7 +60,8 @@ per-character input slots - this mod fills them again.
 
 Open with **F1**, or hold **L3 + R3** (both sticks pressed in) on any controller - handy for Parsec guests.
 Both shortcuts can be changed in the settings (`ManagerKey`, `ManagerControllerShortcut`).
-With **100% Drop and Steal Rate** installed (it opens its own menu with F1), the key is **F8** instead.
+With **100% Drop and Steal Rate** installed (it opens its own menu with F1), the key is **F8** instead; with **Guests from
+ Phantasia** installed (it toggles its guest with L3 + R3), the controller shortcut is **LB + RB + Back**.
 The game ignores input while it's open.
 
 - **Controller:** LB / RB or D-pad left/right moves *that* controller to the previous/next player. Back resets everything to automatic.
@@ -103,8 +104,6 @@ Together (e.g. "Remote Play Whatever") may also work but are not tested.
 
 - **Tested with 2 players** (controller + keyboard). 3–4 players and Parsec should work - please report how it goes.
 - **Menus, the field and cutscenes are controlled by player 1 only**, as on the PS1. Co-op is for battles.
-- **"Guests from Phantasia" also uses L3 + R3** (its camp-menu toggle). If you use both mods, set
-  `ManagerControllerShortcut = LB+RB+Back`. Using both together hasn't been tested yet.
 - **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
   so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). **Uncropped

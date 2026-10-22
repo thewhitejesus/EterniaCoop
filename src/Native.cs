@@ -69,6 +69,9 @@ namespace EterniaCoop
 
         public static IntPtr At(int rva) { return new IntPtr(Base + rva); }
 
+        // Whether a DLL with this name is loaded in the game (e.g. a native mod).
+        public static bool ModuleLoaded(string name) { return GetModuleHandle(name) != IntPtr.Zero; }
+
         public static bool Matches(int rva, byte[] expected)
         {
             var now = new byte[expected.Length];

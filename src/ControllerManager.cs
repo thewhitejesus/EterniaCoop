@@ -7,6 +7,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace EterniaCoop
 {
@@ -42,23 +43,30 @@ namespace EterniaCoop
 
         static bool PadPressed(Gamepad p, string name, bool isDown) { return Pressed(p.deviceId + name, isDown); }
 
-        // Back resets to automatic when it's released without any other button pressed during the hold, so a
-        // shortcut that includes Back (LB+RB+Back, Back+Start) can close the manager without resetting.
-        static readonly Dictionary<int, bool> backClean = new Dictionary<int, bool>();
+        // LB, RB and Back act when released without any other shortcut button pressed during the hold, so the
+        // shortcuts made of them (LB+RB+Back, Back+Start) open and close the manager without also moving the
+        // controller or resetting everything.
+        static readonly Dictionary<string, bool> tapClean = new Dictionary<string, bool>();
 
-        static bool BackTapped(Gamepad p)
+        static bool Tapped(Gamepad p, string name, bool down, bool others)
         {
-            bool back = p.selectButton.isPressed;
-            bool others = p.leftShoulder.isPressed || p.rightShoulder.isPressed || p.startButton.isPressed ||
-                p.leftStickButton.isPressed || p.rightStickButton.isPressed;
-            bool wasDown;
-            held.TryGetValue(p.deviceId + "back", out wasDown);
-            held[p.deviceId + "back"] = back;
-            if (back && !wasDown) backClean[p.deviceId] = !others;
-            else if (back && others) backClean[p.deviceId] = false;
-            bool clean;
-            return !back && wasDown && backClean.TryGetValue(p.deviceId, out clean) && clean;
+            string key = p.deviceId + name;
+            bool wasDown, clean;
+            held.TryGetValue(key, out wasDown);
+            held[key] = down;
+            if (down && !wasDown) tapClean[key] = !others;
+            else if (down && others) tapClean[key] = false;
+            return !down && wasDown && tapClean.TryGetValue(key, out clean) && clean;
         }
+
+        static bool ShortcutButtonsBut(Gamepad p, ButtonControl except)
+        {
+            foreach (var b in new[] { p.leftShoulder, p.rightShoulder, p.selectButton, p.startButton, p.leftStickButton, p.rightStickButton })
+                if (b != except && b.isPressed) return true;
+            return false;
+        }
+
+        static bool BackTapped(Gamepad p) { return Tapped(p, "back", p.selectButton.isPressed, ShortcutButtonsBut(p, p.selectButton)); }
 
         public static Key OpenKey()
         {
@@ -93,8 +101,40 @@ namespace EterniaCoop
                 case "NONE": return "";
                 case "LB+RB+BACK": return "LB + RB + Back";
                 case "BACK+START": return "Back + Start";
-                default: return "L3 + R3";
+                default:
+                    // Guests from Phantasia toggles its guest with L3+R3 (repeatedly while held), so both would fire.
+                    return ShortcutTakenBy() != null ? "LB + RB + Back" : "L3 + R3";
             }
+        }
+
+        // Name of a loaded mod that also uses L3+R3, or null. Guests from Phantasia is a native mod (version.dll
+        // loader), loaded a few seconds after us, so this is checked each time.
+        public static string ShortcutTakenBy()
+        {
+            return Native.ModuleLoaded("ToE_Guest.dll") ? "Guests from Phantasia" : null;
+        }
+
+        // Why the shortcuts aren't the defaults, for the manager ("" when they are): " (F1 is X's, L3 + R3 is Y's)".
+        public static string ConflictNote()
+        {
+            var parts = new List<string>();
+            if (OpenKeyNote() != "") parts.Add("F1 is " + KeyTakenBy() + "'s");
+            if (ShortcutMoved()) parts.Add("L3 + R3 is " + ShortcutTakenBy() + "'s");
+            return parts.Count == 0 ? "" : " (" + string.Join(", ", parts.ToArray()) + ")";
+        }
+
+        // The same, short enough for the main-menu label: "Moved off F1 and L3 + R3 (used by other mods)", or "".
+        public static string ConflictShort()
+        {
+            var moved = new List<string>();
+            if (OpenKeyNote() != "") moved.Add("F1");
+            if (ShortcutMoved()) moved.Add("L3 + R3");
+            return moved.Count == 0 ? "" : "Moved off " + string.Join(" and ", moved.ToArray()) + " (used by other mods)";
+        }
+
+        static bool ShortcutMoved()
+        {
+            return ShortcutTakenBy() != null && Settings.ManagerControllerShortcut.Value.Replace(" ", "").ToUpperInvariant() == "L3+R3";
         }
 
         static bool ShortcutHeld(Gamepad p)
@@ -126,8 +166,10 @@ namespace EterniaCoop
                 if (pad == null) continue;
                 Vector2 dpad = pad.dpad.ReadValue();
                 if (Active(pad)) lastActive[pad.deviceId] = Time.unscaledTime;
-                bool left = PadPressed(pad, "L", pad.leftShoulder.isPressed) | PadPressed(pad, "dL", dpad.x < -0.5f);
-                bool right = PadPressed(pad, "R", pad.rightShoulder.isPressed) | PadPressed(pad, "dR", dpad.x > 0.5f);
+                bool left = Tapped(pad, "L", pad.leftShoulder.isPressed, ShortcutButtonsBut(pad, pad.leftShoulder)) |
+                    PadPressed(pad, "dL", dpad.x < -0.5f);
+                bool right = Tapped(pad, "R", pad.rightShoulder.isPressed, ShortcutButtonsBut(pad, pad.rightShoulder)) |
+                    PadPressed(pad, "dR", dpad.x > 0.5f);
                 if (left) Move(devices, players, i, -1);
                 if (right) Move(devices, players, i, +1);
                 if (BackTapped(pad)) Reset();
@@ -242,7 +284,8 @@ namespace EterniaCoop
 
             var devices = Players.Devices();
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
-            float w = u * 36, rowH = u * 2.4f, h = u * 13 + rowH * devices.Count + (OpenKeyNote() == "" ? 0 : u * 1.5f);
+            string note = ConflictNote();
+            float w = u * 36, rowH = u * 2.4f, h = u * 13 + rowH * devices.Count + (note == "" ? 0 : u * 1.5f);
             var box = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
 
             GUI.color = new Color(0.04f, 0.06f, 0.12f, 0.92f); GUI.DrawTexture(box, white);
@@ -273,7 +316,7 @@ namespace EterniaCoop
                 "Controller: LB / RB or D-pad to change its player  ·  Back: automatic\n" +
                 "Keyboard: Up / Down select, Left / Right change  ·  R: automatic\n" +
                 "Close: " + OpenKey() + ", Esc" + (ShortcutName() == "" ? "" : ", or hold " + ShortcutName()) +
-                (OpenKeyNote() == "" ? "" : "\nThe controller manager is on " + OpenKey() + OpenKeyNote()), hint);
+                (note == "" ? "" : "\nShortcuts changed to avoid other mods" + note), hint);
             if (message != null && Time.unscaledTime < messageUntil)
             {
                 GUI.color = new Color(1f, 0.9f, 0.5f, 1f);

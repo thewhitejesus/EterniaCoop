@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Works with **Guests from Phantasia** without a shortcut clash: it toggles its guest with L3+R3, so while it's
+  installed the controller manager's controller shortcut is **LB+RB+Back** instead. The label and manager say so.
+- Controller manager: LB / RB now act when released, so closing with LB+RB+Back no longer moves the controller.
 - Main-menu label redesigned to match other mods' status lines (small, white, name in bold) and now lists the other
   mods running alongside ("Also running: ..."). Tested with 100% Drop and Steal Rate and Guests from Phantasia.
 - Works with **100% Drop and Steal Rate** (tested together): that mod opens its menu with F1, so while it's installed

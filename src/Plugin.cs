@@ -1,5 +1,6 @@
 // Eternia Co-op - local 4-player co-op for Tales of Eternia Remastered: controllers 2-4 drive party slots 2-4
 // in battle, the way the PS1 version's multitap mode did.
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -68,10 +69,15 @@ namespace EterniaCoop
             if (Compatibility.Problem != null)
                 text += " <color=" + (Compatibility.Ok ? "#FFCC44" : "#FF4444") + ">" + Compatibility.Problem + "</color>";
             if (CoopActive && Settings.AutoAssignControllers.Value)
+            {
+                string pad = ControllerManager.ShortcutName();
                 text += (Compatibility.Problem != null ? " |" : "") + " Controllers: <color=#00FF00>" + ControllerManager.OpenKey() + "</color>" +
-                    (ControllerManager.KeyTakenBy() != null ? " (F1 is Drop & Steal's)" : "");
+                    (pad == "" ? "" : " / <color=#00FF00>" + pad + "</color>");
+            }
             var others = OtherMods.Names(Time.unscaledTime);
-            string also = others.Count == 0 ? null : "Also running: " + string.Join(", ", others.ToArray());
+            var extra = new List<string>();
+            if (others.Count > 0) extra.Add("Also running: " + string.Join(", ", others.ToArray()));
+            if (CoopActive && ControllerManager.ConflictShort() != "") extra.Add(ControllerManager.ConflictShort());
 
             // Same look as 100% Drop & Steal Rate's status line (default font, size 13, white, name in bold). That mod
             // draws at (width - 520, 10), left-aligned; when it's there we line up underneath it in the same column,
@@ -82,7 +88,7 @@ namespace EterniaCoop
             float y = underDropSteal ? 28 : 10;
             GUI.color = Color.white;
             GUI.Label(new Rect(x, y, w, 25), text, watermarkStyle);
-            if (also != null) GUI.Label(new Rect(x, y + 18, w, 25), also, watermarkStyle);
+            for (int i = 0; i < extra.Count; i++) GUI.Label(new Rect(x, y + 18 * (i + 1), w, 25), extra[i], watermarkStyle);
         }
     }
 }

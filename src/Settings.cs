@@ -46,7 +46,7 @@ namespace EterniaCoop
                 "F1 becomes F8 automatically while 100% Drop & Steal Rate is installed, since that mod opens its menu with F1.");
             ManagerControllerShortcut = c.Bind("Coop", "ManagerControllerShortcut", "L3+R3",
                 "Controller buttons to hold for half a second to open the controller manager: L3+R3, LB+RB+Back, Back+Start or None. " +
-                "Use LB+RB+Back with mods that also use L3+R3 (e.g. Guests from Phantasia's camp menu toggle).");
+                "L3+R3 becomes LB+RB+Back automatically while Guests from Phantasia (which toggles its guest with L3+R3) is installed.");
 
             ShowWatermark = c.Bind("Display", "ShowWatermark", true,
                 "Show a small \"Eternia Co-op\" label in the corner of the main menu so you can tell the mod is running.");

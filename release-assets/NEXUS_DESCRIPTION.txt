@@ -29,9 +29,8 @@ SAFE TO USE
 
 KNOWN LIMITATIONS
 - Tested with 2 players. 3-4 players and Parsec should work, feedback welcome!
-- Using Guests from Phantasia? It also uses L3 + R3. Set ManagerControllerShortcut = LB+RB+Back in BepInEx\config\eterniacoop.cfg
 - A controller shows up twice? Turn off Steam Input for the game.
-- Works with 100% Drop and Steal Rate (the controller manager moves to F8) and Guests from Phantasia (with 4 players, set ReplaceFourth=0 in ToE_Guest.ini). Not compatible with Uncropped Backgrounds (it needs BepInEx 6).
+- Works with 100% Drop and Steal Rate (the controller manager moves to F8) and Guests from Phantasia (the controller shortcut moves to LB + RB + Back; with 4 players, set ReplaceFourth=0 in ToE_Guest.ini). Not compatible with Uncropped Backgrounds (it needs BepInEx 6).
 
 UNINSTALL
 Delete winhttp.dll, doorstop_config.ini, .doorstop_version, changelog.txt, EterniaCoop-README.md and the BepInEx folder.
