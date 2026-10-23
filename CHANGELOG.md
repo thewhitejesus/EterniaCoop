@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.4.0 - 2026-10-22
+- **Co-op camera:** with two or more human players, the battle camera centres between their characters and zooms
+  out as they spread apart (back in, after a moment, as they come together), with smooth spring easing and a little
+  look-ahead. Player 1's character is kept in view first if everyone can't fit. Knocked-out characters aren't
+  framed, so with player 1 down the camera follows the others. Spell cameras and the battle menu's manual pan are
+  the game's own. Settings: `CoopCamera`, `CoopCameraMaxZoom` (default 720 - beyond about 730 the view reaches past
+  the bottom of the battle picture).
+- The camera no longer swings back to player 1 when the battle menu or its submenus close, and still moves to show a
+  spell's target.
+- **Controller manager, redone:** any controller can now move through the whole list (D-pad or left stick, held
+  directions repeat) instead of only moving itself; A jumps to your own controller, Y = automatic, B closes. Drawn
+  in Tales of Eternia's own style (the arte-name window, formation arrows, yellow highlights) with the game's font -
+  or Font of Eternia (by Jyrakos) when Font Replacer (by vitruvianesse) is installed - and Reid, Farah, Meredy and
+  Keele from the game's own character art behind it. Neither the font nor any art is included: both come from your
+  installed game and mods while it runs.
+- **Devices can be turned Off** (in the manager, or `KeyboardPlayer = -1` for keyboard and mouse): for Parsec, where
+  guests' keyboards act as the host's.
+
 ## 1.3.0 - 2026-10-22
 - **Survives game updates.** Every spot the mod uses in the game's code (46 code spots, 11 data addresses) now has a
   code signature. When a game update moves code, the mod searches for each one and accepts it only if it's found

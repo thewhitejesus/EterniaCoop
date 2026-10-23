@@ -22,6 +22,8 @@ $refs = @(
     "$managed\mscorlib.dll", "$managed\System.dll", "$managed\System.Core.dll", "$managed\netstandard.dll",
     "$managed\UnityEngine.dll", "$managed\UnityEngine.CoreModule.dll", "$managed\UnityEngine.IMGUIModule.dll",
     "$managed\UnityEngine.TextRenderingModule.dll", "$managed\Unity.InputSystem.dll", "$managed\Assembly-CSharp.dll",
+    "$managed\UnityEngine.UI.dll", "$managed\UnityEngine.UIModule.dll", "$managed\Unity.TextMeshPro.dll",
+    "$managed\UnityEngine.TextCoreFontEngineModule.dll", "$managed\UnityEngine.TextCoreTextEngineModule.dll",
     "$core\BepInEx.dll", "$core\0Harmony.dll", "$core\MonoMod.RuntimeDetour.dll", "$core\MonoMod.Utils.dll"
 ) | ForEach-Object { "/r:$_" }
 

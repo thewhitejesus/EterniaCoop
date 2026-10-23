@@ -53,12 +53,13 @@ deliberately left locked.
 | Menu tab for everyone | `NativePatches.cs` | Skills menu input `FUN_228AD0` and draw `FUN_224920` gate the Control Mode tab on "selected character == 0" (`r10b`/`ecx`): je→jmp ×5, `cmp r10b,1`→4 ×2, one `jae`→NOP, draw `cmp ecx,1`→4. The toggle already uses `mode[selected]`. |
 | Co-op battle input | `CoopBattleInput.cs` | MonoMod `NativeDetour` on `FUN_1121E0`. After the original runs for slot 0: for each extra player whose party actor isn't Auto, point the input object's three slice pointers at that player, call `FUN_19DBC0` into a private pad, swap it into `0x8C9180` with that player's previous command state, call the original again, copy the result to the player's block, restore slot 0's pad and block. |
 | Drop-in/out mid-battle | `CoopBattleInput.cs` | Slots 2-4's actor `+0x57` follows the menu byte, forced to 0 (Auto) while the player has no device. |
-| Controller manager | `ControllerManager.cs` | IMGUI panel (F1 / hold L3+R3; `OpenKey` turns F1 into F8 while 100% Drop & Steal Rate, which uses F1, is loaded). Per-device player choice saved as `path=player;...` in `DeviceAssignments`; `Players.PlayerOf` = saved choice else the automatic order. `Players.BlockAll` zeroes every player's input while open. Player 1 may never be left without a device. |
+| Controller manager | `ControllerManager.cs`, `ManagerView.cs` | Panel (F1 / hold L3+R3; `OpenKey` turns F1 into F8 while 100% Drop & Steal Rate, which uses F1, is loaded). Any controller navigates (D-pad/stick with repeat; A own row, LB/RB move own device, Y automatic, B closes on release). Per-device choice (player 0-3 or `Players.Off` = -1) saved as `path=player;...` in `DeviceAssignments`; `KeyboardPlayer = -1` turns keyboard+mouse off. `Players.PlayerOf` = saved choice else the automatic order. `Players.BlockAll` zeroes every player's input while open. Player 1 may never be left without a device. `ManagerView` draws it on a uGUI canvas with the game's TMP font (`BorderFont_en`, or Font Replacer's `FontOfEternia_Runtime` when loaded) and the game's character art (`face_pic1-4`, copied to RenderTextures while the title screen has them loaded); without the font it falls back to an IMGUI window. Nothing is shipped. |
+| Co-op camera | `CoopCamera.cs` | `CamTargetX` (`0xD3BA3`, the battle camera's load of the followed actor's x) becomes a call to a stub returning our centre while `active`. Spring-smoothed centre + zoom (`CamZoom`, capped by `CoopCameraMaxZoom`), standing human characters only (kind 1). `GuardSnap` undoes the menu's snap to actor 0 (closing the battle menu / leaving submenus resets `CamScrollNow` `0x12CEA98` and `CamScroll`): a jump > 32 px landing within 16 px of `FUN_D6420(actor0.x)` is reverted; other jumps (spell targets) pass. |
 | Battle menu for everyone | `Players.cs`, `Plugin.cs`, `CoopBattleInput.cs` | The menu button (command bit `0x10`) in any slot's block opens the battle menu and records the owner in `0x12CEB8C` (block + 1); `0x12CEB7A` bit 0 = menu open / paused (Start pauses with no owner). The icon row (`FUN_10F770`) reads the owner's block (+8 pressed buttons/D-pad, +0 held dirs), the submenus read player 1's pad. Players 2-4's pads lack menu latches (helpers are player 1-only), so while the menu is open `Players.ShareWithPlayer1` gives player 1 every device and the hook copies block 0 into the owner's block (others cleared, no pad swapping). |
 | Device assignment | `Players.cs` | Once a second: `SetInputDevices` on each `UgxInputPlayer` (keyboard+mouse to `KeyboardPlayer`, controllers in deviceId order). Players without a device get zeroed input (`InputPatches.cs`) - otherwise an empty device list listens to every device and mirrors player 1. |
 | Slot modes follow controllers | `SlotModes.cs` | Writes `JoinMode`/0 to `0x11CAD38+slot` when a player gains/loses a device or the party changes (save load). Menu choices in between are left alone. |
 | Per-player rumble | `RumbleRouter.cs` | Detour on `FUN_8E320(type, flags, hit, attacker, victim)`. At its end the game requests rumble (strength 0.6, 6 frames, played on player 1) only when the option `[0x6449E0]+0x21` is on and the attacker - else the victim - is the party actor in command block 0 (`+0x56 == 0`): players 2-4's characters never rumble. The hook leaves that alone and applies the same rule to blocks 1-3 (skipped while paused, like the game): `UgxInputManager.SetVibration(0.6, player)` / `StopVibration`, queued for `Update`. |
-| Compatibility check | `Compatibility.cs`, `Sites.cs`, `Features.cs` | SHA-256 of `GameNative.dll` vs `KnownSha256` decides the label (and, with `StrictVersionCheck`, whether to stay off). The gate is `Features.Check`, run in the `Initialize` prefix before anything is patched: `Sites.Resolve` finds every site by signature (known address, else cache, else search; on the known build a site whose neighbours another mod hooked is accepted if its own instruction matches), `Rva` takes the found addresses, and each feature (Core, KeepModes, MenuTab, CoopBattle, Rumble) is on only if all its sites resolved (plus cross-checks: Pad/PadHeld, BattleFlags/HitPaused). Everything needs Core. Patches re-check their instruction bytes. |
+| Compatibility check | `Compatibility.cs`, `Sites.cs`, `Features.cs` | SHA-256 of `GameNative.dll` vs `KnownSha256` decides the label (and, with `StrictVersionCheck`, whether to stay off). The gate is `Features.Check`, run in the `Initialize` prefix before anything is patched: `Sites.Resolve` finds every site by signature (known address, else cache, else search; on the known build a site whose neighbours another mod hooked is accepted if its own instruction matches), `Rva` takes the found addresses, and each feature (Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera) is on only if all its sites resolved (plus cross-checks: Pad/PadHeld, BattleFlags/HitPaused). Everything needs Core. Patches re-check their instruction bytes. |
 | Watermark | `Plugin.cs` | IMGUI label, top-right, main menu only: hidden while the area id at `0x11CAFC4` is non-zero (it is 0 on the title screen; the party list is *not* empty there - it holds Reid). |
 
 ## Source layout
@@ -74,7 +75,9 @@ src/
   Sites.Generated.cs  the signatures - generated by research/gen_sigs.py, don't edit by hand
   Features.cs         which sites each feature needs: which features are safe to turn on
   Players.cs          device -> player assignment (automatic order + saved manual choices)
-  ControllerManager.cs  in-game controller manager panel
+  ControllerManager.cs  in-game controller manager (input, assignment, IMGUI fallback window)
+  ManagerView.cs      the manager's game-styled window (uGUI + the game's fonts and character art)
+  CoopCamera.cs       co-op battle camera
   InputPatches.cs     Harmony patches on the C# input layer
   NativePatches.cs    code patches in GameNative
   Battle.cs           actor helpers (party slot from command block pointer)
@@ -108,6 +111,8 @@ The build uses the .NET Framework `csc.exe` that ships with Windows, so the code
 | `0x8E320` | apply hit (rumble decision at its end, `0x8E895`) |
 | `0x228AD0` / `0x224920` | Skills menu input / draw |
 | `0xD6420` | battle camera scroll from x: `-(x >> 4)`, clamped to the field; stored at `0x12CEAB8` |
+| `0x12CEB78` / `0x12CEB7F` | battle camera zoom setting (0x200 closest .. 0x29C game max) / camera mode (0 normal, >= 2 scripted) |
+| `0x12CEAB8` / `0x12CEA98` | camera scroll target / scroll shown now (eases toward the target) |
 | `0x11CB80` / `0x1A07D0` | PS1 GTE-style object transform / perspective projection |
 | `0x6449F8` | input object pointer |
 | `0x8C9180` | PSP pad (0x144 bytes) |
@@ -144,6 +149,13 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
 - **Signatures stay out of a function's first 16 bytes** (`HOOK_ZONE`): other mods hook functions there (something
   hooks `FUN_110120`), and a signature covering a hook stops matching.
 - **PowerShell `Set-Content` writes a BOM; BepInEx config tolerates it, other tools might not.**
+- **Zooming the battle camera past ~730 shows a band below the picture.** The zoom is a real camera distance; each
+  stage's background routine (table `0x4E8E90`, dispatched by `FUN_10D500`) draws its ground as a perspective grid of
+  quads (`FUN_11E6F0`) only as far as the PS1 screen needed. A ground extension (homography fit of the grid, rows
+  continued downward, the stages' black under-ground fill `FUN_120F70` skipped) works, but the remaster renders the
+  battle into a fixed viewport (e.g. 2560x1011 from y 174 on 1440p): anything below it never shows, scissor or not.
+  Parked in `research/wip/` until the viewport (and its projection) can be extended like Uncropped Backgrounds does
+  sideways.
 
 ## Updating after a game patch
 

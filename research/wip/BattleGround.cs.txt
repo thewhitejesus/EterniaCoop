@@ -1,0 +1,441 @@
+// Battle ground extension for the co-op camera. The battle camera's zoom is a real camera distance: each battlefield's
+// background routine (one per stage, dispatched by FUN_10D500) projects a grid of ground points and draws it as rows
+// of textured quads (FUN_11E6F0) - but only as far toward the camera as the PS1's screen needed. Zoomed out beyond
+// the game's own limit, the bottom row ends above the screen's bottom edge and a black band shows below it.
+//
+// While FUN_10D500 runs, a small native stub on FUN_11E6F0 copies every quad drawn into a buffer. Afterwards, if
+// the camera is zoomed out past the game's limit, the quads of the lowest row are continued downward: each new row
+// starts where the previous one ended and grows the way the rows above it did (perspective), with the same texture
+// strip. The game's own drawing is untouched; at the game's zoom levels nothing is added.
+using System;
+using System.Runtime.InteropServices;
+
+namespace EterniaCoop
+{
+    static class BattleGround
+    {
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void DrawBgFn();
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void QuadFn(IntPtr prim);
+
+        const int DrawBgRva = 0x10D500, QuadRva = 0x11E6F0;
+        static readonly byte[] QuadEntry = { 0x48, 0x89, 0x5C, 0x24, 0x10 };   // mov [rsp+0x10], rbx
+        // FUN_120F70: solid rectangle from the work struct (x, y at 0x11CE660/662, w, h at 664/666).
+        const int FillRva = 0x120F70, FillY = 0x11CE662, LowFill = 0x60;
+        static readonly byte[] FillEntry = { 0x40, 0x53, 0x48, 0x83, 0xEC, 0x20 };   // push rbx ; sub rsp, 0x20
+
+        // Primitive (the game's work struct at 0x11CE620): +0x20 four corners (x, y shorts: top-left, top-right,
+        // bottom-left, bottom-right), +0x64 depth, +0x66 texture page, +0x6A u, v, width, height.
+        const int PrimSize = 0xC0, P0 = 0x20;
+        const int Region = 0x10000, BufOffset = 0x200, MaxQuads = (Region - BufOffset) / PrimSize;
+        const short ZoomGameMax = 0x29C;
+        // PS1 screen y the extension reaches. Zoomed far out the view reaches well below the PS1's 0xE0; below the
+        // ground the stage's clear colour shows (black, green...). Rows near the camera are spaced truly (homography),
+        // so it takes many of them to get there.
+        const int TargetBottom = 0x1C0;
+        const int MaxRows = 40;
+
+        static IntPtr region, rec, count, buf, extra;
+        static MonoMod.RuntimeDetour.NativeDetour detour;
+        static DrawBgFn original, hook;
+        static QuadFn drawQuad;
+        static bool installed;
+        static readonly short[] q = new short[8], above = new short[8];
+
+        public static void Install()
+        {
+            if (installed) return;
+            installed = true;   // one attempt
+            if (!Native.Matches(QuadRva, QuadEntry) || !Native.Matches(FillRva, FillEntry) ||
+                !Native.Matches(DrawBgRva, new byte[] { 0x48, 0x89, 0x5C, 0x24, 0x08 }))
+            { Plugin.Log.LogError("Battle ground: unexpected code, not installed"); return; }
+            region = Native.AllocNear(Region);
+            if (region == IntPtr.Zero) { Plugin.Log.LogError("Battle ground: no memory near the game module"); return; }
+            long S = region.ToInt64();
+            rec = new IntPtr(S + 0x100);
+            count = new IntPtr(S + 0x104);
+            buf = new IntPtr(S + BufOffset);
+            extra = Marshal.AllocHGlobal(PrimSize);
+
+            var c = new System.Collections.Generic.List<byte>();
+            Action<byte[]> emit = b => c.AddRange(b);
+            Func<long, int, byte[]> rel = (target, end) => BitConverter.GetBytes((int)(target - (S + end)));
+
+            // cmp byte [rip+rec], 0 ; je tail
+            emit(new byte[] { 0x80, 0x3D }); emit(rel(rec.ToInt64(), c.Count + 5)); emit(new byte[] { 0x00 });
+            int je1 = c.Count; emit(new byte[] { 0x74, 0 });
+            // mov eax, [rip+count] ; cmp eax, MaxQuads ; jae tail
+            emit(new byte[] { 0x8B, 0x05 }); emit(rel(count.ToInt64(), c.Count + 4));
+            emit(new byte[] { 0x3D }); emit(BitConverter.GetBytes(MaxQuads));
+            int jae = c.Count; emit(new byte[] { 0x73, 0 });
+            // inc dword [rip+count]
+            emit(new byte[] { 0xFF, 0x05 }); emit(rel(count.ToInt64(), c.Count + 4));
+            // push rsi ; push rdi ; push rcx ; imul eax, eax, PrimSize ; lea rdi, [rip+buf] ; add rdi, rax
+            emit(new byte[] { 0x56, 0x57, 0x51, 0x69, 0xC0 }); emit(BitConverter.GetBytes(PrimSize));
+            emit(new byte[] { 0x48, 0x8D, 0x3D }); emit(rel(buf.ToInt64(), c.Count + 4));
+            emit(new byte[] { 0x48, 0x01, 0xC7 });
+            // mov rsi, rcx ; mov ecx, PrimSize ; rep movsb ; pop rcx ; pop rdi ; pop rsi
+            emit(new byte[] { 0x48, 0x89, 0xCE, 0xB9 }); emit(BitConverter.GetBytes(PrimSize));
+            emit(new byte[] { 0xF3, 0xA4, 0x59, 0x5F, 0x5E });
+            int tail = c.Count;
+            // tail: the instruction the jump replaced, then back into FUN_11E6F0
+            emit(QuadEntry);
+            emit(new byte[] { 0xE9 }); emit(rel(Native.Base + QuadRva + 5, c.Count + 4));
+            var code = c.ToArray();
+            code[je1 + 1] = (byte)(tail - (je1 + 2));
+            code[jae + 1] = (byte)(tail - (jae + 2));
+            Marshal.Copy(code, 0, region, code.Length);
+
+            drawQuad = (QuadFn)Marshal.GetDelegateForFunctionPointer(Native.At(QuadRva), typeof(QuadFn));
+            hook = Hook;
+            detour = new MonoMod.RuntimeDetour.NativeDetour(Native.At(DrawBgRva), Marshal.GetFunctionPointerForDelegate(hook));
+            original = detour.GenerateTrampoline<DrawBgFn>();
+
+            // Second stub (at +0x80) on FUN_120F70, the solid fill: many stages blank the strip between their ground and
+            // the PS1 screen's bottom (y 0xD0) with a black rectangle, which would cover the new rows. While recording
+            // (zoomed out past the game's limit), fills that start in the lower part of the screen are skipped; the
+            // ones above (e.g. over the top of the background) still run.
+            //   cmp byte [rip+rec], 0 ; je tail ; cmp word [rip+fillY], LowFill ; jl tail ; ret
+            //   tail: push rbx ; sub rsp, 0x20 ; jmp FUN_120F70+6
+            long S2 = S + 0x80;
+            var f = new System.Collections.Generic.List<byte>();
+            Func<long, int, byte[]> rel2 = (target, end) => BitConverter.GetBytes((int)(target - (S2 + end)));
+            f.AddRange(new byte[] { 0x80, 0x3D }); f.AddRange(rel2(rec.ToInt64(), f.Count + 5)); f.Add(0x00);
+            int je2 = f.Count; f.AddRange(new byte[] { 0x74, 0 });
+            f.AddRange(new byte[] { 0x66, 0x81, 0x3D }); f.AddRange(rel2(Native.Base + FillY, f.Count + 6)); f.AddRange(BitConverter.GetBytes((short)LowFill));
+            int jl = f.Count; f.AddRange(new byte[] { 0x7C, 0 });
+            f.Add(0xC3);
+            int tail2 = f.Count;
+            f.AddRange(FillEntry);
+            f.Add(0xE9); f.AddRange(rel2(Native.Base + FillRva + FillEntry.Length, f.Count + 4));
+            var fill = f.ToArray();
+            fill[je2 + 1] = (byte)(tail2 - (je2 + 2));
+            fill[jl + 1] = (byte)(tail2 - (jl + 2));
+            Marshal.Copy(fill, 0, new IntPtr(S2), fill.Length);
+
+            long jmp = S - (Native.Base + QuadRva + 5);
+            var patch = new byte[5];
+            patch[0] = 0xE9;
+            BitConverter.GetBytes((int)jmp).CopyTo(patch, 1);
+            Native.Write(QuadRva, patch);
+            var fillPatch = new byte[] { 0xE9, 0, 0, 0, 0, 0x90 };   // jmp stub ; nop (6 bytes replaced)
+            BitConverter.GetBytes((int)(S2 - (Native.Base + FillRva + 5))).CopyTo(fillPatch, 1);
+            Native.Write(FillRva, fillPatch);
+            Plugin.Log.LogMessage("Battle ground extension installed.");
+        }
+
+        static void Hook()
+        {
+            bool extend = Settings.CoopCamera.Value && Marshal.ReadInt16(Native.At(0x12CEA9C)) > ZoomGameMax;
+            if (!extend) { original(); return; }
+            Marshal.WriteInt32(count, 0);
+            Marshal.WriteByte(rec, 1);
+            try { original(); }
+            finally { Marshal.WriteByte(rec, 0); }
+            try { Extend(); }
+            catch (Exception e) { Plugin.Log.LogError("Battle ground: " + e); }
+        }
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void FillFn();
+        static FillFn fillRect;
+        const int WorkRect = 0x11CE660, WorkColor = 0x11CE670, WorkMode = 0x11CE680;
+
+        // Below the PS1 picture's bottom edge (y 0xD0) some stages don't show the new rows (they clip there), leaving
+        // their clear colour (teal, green...). For now that strip is simply black on every stage, like the game's own
+        // fill, drawn with the game's fill function (FUN_120F70, reading the work struct; saved and restored).
+        static void BlackBelow()
+        {
+            if (fillRect == null) fillRect = (FillFn)Marshal.GetDelegateForFunctionPointer(Native.At(FillRva), typeof(FillFn));
+            long rect = Marshal.ReadInt64(Native.At(WorkRect));
+            int color = Marshal.ReadInt32(Native.At(WorkColor)), mode = Marshal.ReadInt32(Native.At(WorkMode));
+            Marshal.WriteInt16(Native.At(WorkRect), -0x200);       // x
+            Marshal.WriteInt16(Native.At(WorkRect + 2), 0xD0);     // y
+            Marshal.WriteInt16(Native.At(WorkRect + 4), 0x540);    // width
+            Marshal.WriteInt16(Native.At(WorkRect + 6), 0x200);    // height
+            Marshal.WriteInt32(Native.At(WorkColor), color & unchecked((int)0xFF000000));   // black, as the stages' own fill
+            Marshal.WriteInt32(Native.At(WorkMode), mode & unchecked((int)0xFFFF0000));
+            try { fillRect(); }
+            finally
+            {
+                Marshal.WriteInt64(Native.At(WorkRect), rect);
+                Marshal.WriteInt32(Native.At(WorkColor), color);
+                Marshal.WriteInt32(Native.At(WorkMode), mode);
+            }
+        }
+
+        static IntPtr Quad(int i) { return new IntPtr(buf.ToInt64() + i * PrimSize); }
+
+        // Corners of every recorded quad, read from the buffer once per frame.
+        static readonly short[] corners = new short[MaxQuads * 8];
+        static int quads;
+
+        static void Read(int i, short[] to) { Array.Copy(corners, i * 8, to, 0, 8); }
+
+        static int Bottom(short[] v) { return Math.Max(v[5], v[7]); }
+
+
+        static bool IsGround(short[] v) { return v[5] > v[1] && v[7] > v[3]; }
+
+        static bool Same(short[] a, int ia, short[] b, int ib) { return a[ia] == b[ib] && a[ia + 1] == b[ib + 1]; }
+
+        // The ground grid: neighbouring quads share corners exactly (they come from the same projected points), so
+        // the quads connected to the lowest one get grid coordinates (column, row) by walking those shared edges.
+        const int GridSize = 64, GridOff = 32;
+        static readonly int[] gcol = new int[MaxQuads], grow = new int[MaxQuads], queue = new int[MaxQuads];
+        static readonly int[,] cell = new int[GridSize, GridSize];
+        static readonly short[] nb = new short[8];
+
+        static int BuildGrid(int start)
+        {
+            for (int c = 0; c < GridSize; c++) for (int r = 0; r < GridSize; r++) cell[c, r] = -1;
+            for (int i = 0; i < quads; i++) gcol[i] = int.MinValue;
+            int head = 0, tail = 0, found = 0;
+            gcol[start] = GridOff; grow[start] = GridOff; cell[GridOff, GridOff] = start; queue[tail++] = start;
+            while (head < tail)
+            {
+                int i = queue[head++];
+                found++;
+                Read(i, q);
+                for (int j = 0; j < quads; j++)
+                {
+                    if (gcol[j] != int.MinValue) continue;
+                    Read(j, nb);
+                    if (!IsGround(nb)) continue;
+                    int dc, dr;
+                    // corners: 0 top-left, 2 top-right, 4 bottom-left, 6 bottom-right (x, y pairs)
+                    if (Same(nb, 0, q, 2) && Same(nb, 4, q, 6)) { dc = 1; dr = 0; }
+                    else if (Same(nb, 2, q, 0) && Same(nb, 6, q, 4)) { dc = -1; dr = 0; }
+                    else if (Same(nb, 0, q, 4) && Same(nb, 2, q, 6)) { dc = 0; dr = 1; }
+                    else if (Same(nb, 4, q, 0) && Same(nb, 6, q, 2)) { dc = 0; dr = -1; }
+                    else continue;
+                    int c = gcol[i] + dc, r = grow[i] + dr;
+                    if (c < 0 || r < 0 || c >= GridSize || r >= GridSize || cell[c, r] >= 0) continue;
+                    gcol[j] = c; grow[j] = r; cell[c, r] = j; queue[tail++] = j;
+                }
+            }
+            return found;
+        }
+
+        // Perspective map from grid coordinates (X = column, Y = row, corners at whole numbers) to the screen: a
+        // ground plane seen through a camera is exactly a homography, u = (aX + bY + c) / (gX + hY + 1), likewise v.
+        // Fitted by least squares to every corner of the grid, so rounding in single points averages out.
+        static readonly double[] H = new double[8];
+        static readonly double[,] M = new double[8, 9];
+
+        static void AddRow(double[] row, double rhs)
+        {
+            for (int a = 0; a < 8; a++)
+            {
+                if (row[a] == 0) continue;
+                for (int b = 0; b < 8; b++) M[a, b] += row[a] * row[b];
+                M[a, 8] += row[a] * rhs;
+            }
+        }
+
+        static readonly double[] ru = new double[8], rv = new double[8];
+
+        static bool FitGrid(int[] members, int n, out double maxError)
+        {
+            maxError = double.MaxValue;
+            Array.Clear(M, 0, M.Length);
+            int points = 0;
+            for (int m = 0; m < n; m++)
+            {
+                int i = members[m];
+                Read(i, q);
+                for (int k = 0; k < 4; k++)
+                {
+                    double X = gcol[i] - GridOff + (k & 1), Y = grow[i] - GridOff + (k >> 1), u = q[k * 2], v = q[k * 2 + 1];
+                    ru[0] = X; ru[1] = Y; ru[2] = 1; ru[3] = 0; ru[4] = 0; ru[5] = 0; ru[6] = -X * u; ru[7] = -Y * u;
+                    rv[0] = 0; rv[1] = 0; rv[2] = 0; rv[3] = X; rv[4] = Y; rv[5] = 1; rv[6] = -X * v; rv[7] = -Y * v;
+                    AddRow(ru, u); AddRow(rv, v);
+                    points++;
+                }
+            }
+            if (points < 8) return false;
+
+            // Gaussian elimination with partial pivoting.
+            for (int col = 0; col < 8; col++)
+            {
+                int piv = col;
+                for (int r = col + 1; r < 8; r++) if (Math.Abs(M[r, col]) > Math.Abs(M[piv, col])) piv = r;
+                if (Math.Abs(M[piv, col]) < 1e-9) return false;
+                if (piv != col) for (int c = 0; c < 9; c++) { double t = M[col, c]; M[col, c] = M[piv, c]; M[piv, c] = t; }
+                for (int r = 0; r < 8; r++)
+                {
+                    if (r == col) continue;
+                    double f = M[r, col] / M[col, col];
+                    if (f == 0) continue;
+                    for (int c = col; c < 9; c++) M[r, c] -= f * M[col, c];
+                }
+            }
+            for (int a = 0; a < 8; a++) H[a] = M[a, 8] / M[a, a];
+
+            maxError = 0;
+            for (int m = 0; m < n; m++)
+            {
+                int i = members[m];
+                Read(i, q);
+                for (int k = 0; k < 4; k++)
+                {
+                    double u, v;
+                    if (!Project(gcol[i] - GridOff + (k & 1), grow[i] - GridOff + (k >> 1), out u, out v)) return false;
+                    maxError = Math.Max(maxError, Math.Max(Math.Abs(u - q[k * 2]), Math.Abs(v - q[k * 2 + 1])));
+                }
+            }
+            return true;
+        }
+
+        static bool Project(double X, double Y, out double u, out double v)
+        {
+            double w = H[6] * X + H[7] * Y + 1;
+            u = v = 0;
+            if (w < 0.02) return false;   // at or behind the camera
+            u = (H[0] * X + H[1] * Y + H[2]) / w;
+            v = (H[3] * X + H[4] * Y + H[5]) / w;
+            return true;
+        }
+
+        static readonly int[] members = new int[MaxQuads];
+
+        static void Extend()
+        {
+            int n = quads = Math.Min(Marshal.ReadInt32(count), MaxQuads);
+            if (n == 0) { Why("no quads recorded"); return; }
+            for (int i = 0; i < n; i++) Marshal.Copy(new IntPtr(Quad(i).ToInt64() + P0), corners, i * 8, 8);
+
+            // Start from the lowest ground quad drawn.
+            int lowest = int.MinValue, start = -1;
+            for (int i = 0; i < n; i++)
+            {
+                Read(i, q);
+                if (IsGround(q) && Bottom(q) > lowest) { lowest = Bottom(q); start = i; }
+            }
+            if (start < 0 || lowest >= TargetBottom) { Why(n + " quads, lowest ground bottom " + lowest); return; }
+
+            int found = BuildGrid(start);
+            int count2 = 0, maxRow = int.MinValue, minRow = int.MaxValue;
+            for (int i = 0; i < n; i++)
+                if (gcol[i] != int.MinValue)
+                {
+                    members[count2++] = i;
+                    if (grow[i] > maxRow) maxRow = grow[i];
+                    if (grow[i] < minRow) minRow = grow[i];
+                }
+            if (found < 4 || maxRow - minRow < 1) { Why(n + " quads, grid of " + found + " quads, " + (maxRow - minRow + 1) + " rows, lowest " + lowest); return; }   // need at least two rows to know the perspective
+
+            double error;
+            bool fitted = FitGrid(members, count2, out error);
+            if (!fitted || error > 2.5) { Why(n + " quads, grid " + found + " quads / " + (maxRow - minRow + 1) + " rows, fit " + (fitted ? error.ToString("F1") + " px" : "failed")); return; }   // not a regular grid: leave it alone
+
+            // The new rows span the whole screen width, every corner from the one perspective fit (so neighbours share
+            // corners exactly), except the top edge of the first new row, which is the real bottom edge.
+            int b0 = int.MaxValue, b1 = int.MinValue;
+            for (int c = 0; c < GridSize; c++) if (cell[c, maxRow] >= 0) { b0 = Math.Min(b0, c); b1 = Math.Max(b1, c); }
+            if (b0 > b1) return;
+            bottomRow = maxRow;
+            drawn = 0; lastY = double.MinValue;
+            int u0 = Marshal.ReadInt16(Quad(cell[b0, maxRow]), 0x6A), uw = Marshal.ReadInt16(Quad(cell[b0, maxRow]), 0x6E);
+
+            for (int c = b0 - SideColumns; c <= b1 + SideColumns; c++)
+            {
+                int sc = SourceColumn(c, b0, b1, u0, uw);
+                if (sc < 0) continue;
+                int rows = 0;
+                while (maxRow - rows >= 0 && cell[sc, maxRow - rows] >= 0) rows++;
+
+                double X = c - GridOff, Ytop = maxRow - GridOff + 1, tlx, tly, trx, tr_y;
+                if (!Corner(c, maxRow, X, Ytop, out tlx, out tly) || !Corner(c + 1, maxRow, X + 1, Ytop, out trx, out tr_y)) continue;
+                for (int j = 1; j <= MaxRows && Math.Min(tly, tr_y) < TargetBottom; j++)
+                {
+                    double Y = Ytop + j, blx, bly, brx, bry;
+                    if (!Project(X, Y, out blx, out bly) || !Project(X + 1, Y, out brx, out bry)) break;
+                    if (Math.Abs(blx) > 4000 || Math.Abs(brx) > 4000 || bly > 4000 || bry > 4000) break;
+                    if (Math.Max(Math.Max(tlx, blx), Math.Max(trx, brx)) < -ScreenMargin ||
+                        Math.Min(Math.Min(tlx, blx), Math.Min(trx, brx)) > 320 + ScreenMargin) break;   // off screen
+
+                    Texture(sc, rows, j);
+                    Marshal.WriteInt16(extra, P0 + 0, (short)Math.Round(tlx));
+                    Marshal.WriteInt16(extra, P0 + 2, (short)Math.Round(tly));
+                    Marshal.WriteInt16(extra, P0 + 4, (short)Math.Round(trx));
+                    Marshal.WriteInt16(extra, P0 + 6, (short)Math.Round(tr_y));
+                    Marshal.WriteInt16(extra, P0 + 8, (short)Math.Round(blx));
+                    Marshal.WriteInt16(extra, P0 + 10, (short)Math.Round(bly));
+                    Marshal.WriteInt16(extra, P0 + 12, (short)Math.Round(brx));
+                    Marshal.WriteInt16(extra, P0 + 14, (short)Math.Round(bry));
+                    drawQuad(extra);
+                    drawn++;
+                    if (drawn == 1) { firstY = tly; firstX = tlx; }
+                    lastY = Math.Max(lastY, Math.Max(bly, bry));
+                    tlx = blx; tly = bly; trx = brx; tr_y = bry;
+                }
+            }
+            Why(n + " quads, grid " + found + " quads / " + (maxRow - minRow + 1) + " rows, columns " + b0 + "-" + b1 + ", fit " + error.ToString("F1") + " px, drew " + drawn + ", real ground ends y=" + lowest + ", new rows from y=" + firstY.ToString("F0") + " (x " + firstX.ToString("F0") + ") to y=" + lastY.ToString("F0"));
+        }
+
+        static int drawn;
+        static double firstY, firstX, lastY;
+
+        // Debug builds: why the extension did (or didn't) draw, logged once a second while zoomed out.
+        [System.Diagnostics.Conditional("COOP_DEBUG")]
+        static void Why(string what)
+        {
+            if (++whyTick % 60 == 0) Plugin.Log.LogInfo("Battle ground: " + what);
+        }
+        static int whyTick;
+
+        const int SideColumns = 12;      // how far beyond the drawn columns the new rows may reach
+        const int ScreenMargin = 260;    // PS1 pixels beyond the 320-wide screen that can be visible zoomed out
+
+        // A corner of the real bottom edge (column line cx) if a bottom quad has it, else the projected one.
+        static bool Corner(int cx, int row, double X, double Y, out double x, out double y)
+        {
+            if (cx >= 0 && cx < GridSize && cell[cx, row] >= 0) { Read(cell[cx, row], nb); x = nb[4]; y = nb[5]; return true; }
+            if (cx - 1 >= 0 && cx - 1 < GridSize && cell[cx - 1, row] >= 0) { Read(cell[cx - 1, row], nb); x = nb[6]; y = nb[7]; return true; }
+            return Project(X, Y, out x, out y);
+        }
+
+        // Which drawn column a new column takes its texture from: inside the drawn range, itself; outside, the drawn
+        // column whose texture slice continues the pattern (the ground's columns step through the texture by their
+        // width, wrapping at 256), so the extension carries on sideways without a seam.
+        static int SourceColumn(int c, int b0, int b1, int u0, int uw)
+        {
+            if (FindRow(c) >= 0) return c;
+            int want = (u0 + (c - b0) * uw) & 0xFF;
+            for (int s = b0; s <= b1; s++)
+            {
+                int r = FindRow(s);
+                if (r >= 0 && (Marshal.ReadInt16(Quad(cell[s, r]), 0x6A) & 0xFF) == want) return s;
+            }
+            return c < b0 ? b0 : b1;   // no matching slice: the nearest edge column
+        }
+
+        static int bottomRow;
+        static int FindRow(int c) { return c >= 0 && c < GridSize && cell[c, bottomRow] >= 0 ? bottomRow : -1; }
+
+#if COOP_DEBUG
+        public static int Mode;   // Numpad 4: 0 mirror, 1 repeat, 2 smooth (research)
+#else
+        const int Mode = 0;
+#endif
+
+        // Sets extra to the source quad's look for new row j: Mirror reflects the ground below its bottom edge (the
+        // bottom strip flipped, then the one above it, ... and back again: every seam joins matching texture).
+        static void Texture(int sc, int rows, int j)
+        {
+            int src;
+            bool flip = false;
+            if (Mode == 1) src = cell[sc, bottomRow - rows + 1 + (j - 1) % rows];   // the whole ground again from its far edge
+            else if (Mode == 2) src = cell[sc, bottomRow];
+            else
+            {
+                int period = 2 * rows, s = (j - 1) % period;
+                flip = s < rows;
+                src = cell[sc, bottomRow - (flip ? s : period - 1 - s)];
+            }
+            Native.Copy(Quad(src), extra, PrimSize);
+            short v = Marshal.ReadInt16(extra, 0x6C), h = Marshal.ReadInt16(extra, 0x70);
+            if (Mode == 2) { Marshal.WriteInt16(extra, 0x6C, (short)(v + h - 1)); Marshal.WriteInt16(extra, 0x70, 1); }   // its last texel row, stretched
+            else if (flip) { Marshal.WriteInt16(extra, 0x6C, (short)(v + h)); Marshal.WriteInt16(extra, 0x70, (short)-h); }
+        }
+    }
+}

@@ -11,7 +11,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.3.0";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.4.0";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -29,7 +29,7 @@ namespace EterniaCoop
             Players.LoadManual(Settings.DeviceAssignments.Value);
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
             Log.LogInfo(Name + " " + Version + (Compatibility.Ok ? "" : " (inactive: " + Compatibility.Problem + ")") +
-                ". Players: " + Settings.PlayerCount.Value + ", keyboard -> player " + (Settings.KeyboardPlayer.Value + 1) + ".");
+                ". Players: " + Settings.PlayerCount.Value + ", keyboard -> " + (Settings.KeyboardPlayer.Value < 0 ? "off" : "player " + (Settings.KeyboardPlayer.Value + 1)) + ".");
             string wine = Native.WineVersion();
             if (wine != null) Log.LogInfo("Running under Wine/Proton " + wine + " (Linux or Steam Deck).");
         }

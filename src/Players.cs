@@ -27,8 +27,11 @@ namespace EterniaCoop
         public static volatile bool ForceBlankExtraPlayers;   // research toggle (Numpad 0)
 #endif
 
+        // A device set to Off controls nobody (e.g. a Parsec guest's keyboard and mouse, which arrive as the host's).
+        public const int Off = -1;
+
         static string lastAssignment = "";
-        static readonly Dictionary<string, int> manual = new Dictionary<string, int>();   // device path -> player 0-3
+        static readonly Dictionary<string, int> manual = new Dictionary<string, int>();   // device path -> player 0-3 or Off
 
         static System.Reflection.MethodInfo getInputPlayer, setInputDevices;   // looked up once
 
@@ -58,7 +61,7 @@ namespace EterniaCoop
             {
                 int eq = part.LastIndexOf('=');
                 int player;
-                if (eq > 0 && int.TryParse(part.Substring(eq + 1), out player) && player >= 0 && player < 4)
+                if (eq > 0 && int.TryParse(part.Substring(eq + 1), out player) && player >= Off && player < 4)
                     manual[part.Substring(0, eq)] = player;
             }
         }
@@ -74,7 +77,7 @@ namespace EterniaCoop
         public static void SetManual(InputDevice d, int player) { manual[d.path] = player; }
         public static void ClearManual() { manual.Clear(); }
 
-        // Player (0-3) each listed device goes to, in Devices() order.
+        // Player (0-3) each listed device goes to, in Devices() order; Off (-1) for none. keyboardPlayer -1 = keyboard off.
         public static int[] PlayerOf(List<InputDevice> devices, int keyboardPlayer)
         {
             var result = new int[devices.Count];
@@ -83,7 +86,7 @@ namespace EterniaCoop
             {
                 var d = devices[i];
                 int auto;
-                if (d is Keyboard) auto = keyboardPlayer;
+                if (d is Keyboard) auto = keyboardPlayer < 0 ? Off : keyboardPlayer;
                 else
                 {
                     if (nextAuto == keyboardPlayer && keyboardPlayer != 0) nextAuto++;

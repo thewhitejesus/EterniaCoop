@@ -48,6 +48,8 @@ namespace EterniaCoop
         public static int CamZoom = 0x12CEB78, CamMode = 0x12CEB7F;
         // Battle camera scroll (short): -(centre x >> 4), clamped to the field (FUN_D6420's result).
         public static int CamScroll = 0x12CEAB8;
+        // The scroll the camera shows now (short); it eases toward CamScroll each frame.
+        public static int CamScrollNow = 0x12CEA98;
     }
 
     // Battle actor field offsets.

@@ -7,6 +7,10 @@
 // mode (Rva.CamMode) is 0. That one 5-byte load becomes a call to a small stub: the original load, then - while the
 // mod has a centre for this frame - our x instead. The manual pan path (hold Square in the battle menu) and scripted
 // cameras (spells, mystic artes: mode >= 2) never reach it. Everything else - clamping, rendering - stays the game's.
+//
+// Knocked-out characters (kind 2) aren't framed: with player 1's character down the camera follows the others.
+// Closing the battle menu or coming back from its submenus snaps the camera to the leader (actor 0) before it eases
+// back; while we steer, that snap is undone (GuardSnap), so the camera stays where it was.
 using System;
 using System.Runtime.InteropServices;
 
@@ -18,10 +22,11 @@ namespace EterniaCoop
         // 320 + 2 * (z - 0x200) / 3 PS1 pixels wide, and the field is 0x160 + 320 = 672 wide (the camera centre ranges
         // over 0..0x160 at zoom 0x200). The game's own limit (manual zoom) is 0x29C, a 424-pixel view; 0x410 shows
         // the whole field.
-        const short ZoomMin = 0x200, ZoomGameMax = 0x29C, ZoomFullField = 0x410;
-        const float FieldWidth = 672f;
+        const short ZoomMin = 0x200, ZoomFullField = 0x410;
         const float Edge = 40f;            // room kept beyond the outermost players, PS1 pixels
         const float DeadZone = 6f;         // ignore spread changes smaller than this (no twitching), PS1 pixels
+        const float LeadMax = 20f;         // look-ahead cap, PS1 pixels
+        const int SnapLimit = 32;          // PS1 pixels per frame; the camera itself never moves this fast
 
         static float ViewWidth(float z) { return 320f + 2f * (z - ZoomMin) / 3f; }
         static float ZoomFor(float width) { return ZoomMin + 1.5f * (width - 320f); }
@@ -30,8 +35,12 @@ namespace EterniaCoop
         static bool installed;
         static long lastActors;
         static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait, lastMid, leadVel;
-        static bool tracking, resume;
-        const float LeadMax = 20f;         // look-ahead cap, PS1 pixels
+        static bool tracking, resume, haveScroll;
+        static short lastScroll;   // the camera's position on the previous frame
+
+        // FUN_D6420, the game's own scroll function (x -> clamped scroll), called right after CamTargetX.
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate short ScrollFn(int x);
+        static ScrollFn scrollFor;
 
         // Critically damped spring (no overshoot, no snap): moves value toward target, settling in about smoothTime
         // seconds. One step per battle frame (60 fps).
@@ -51,8 +60,11 @@ namespace EterniaCoop
         {
             if (installed || !Features.Camera) return;
             int site = Sites.Rva("CamTargetX", 0);
-            if (!Native.Matches(site, new byte[] { 0x0F, 0xB7, 0x4C, 0x1A, 0x10 }))
+            // The load, then the call to FUN_D6420 right after it.
+            if (!Native.Matches(site, new byte[] { 0x0F, 0xB7, 0x4C, 0x1A, 0x10 }) || Marshal.ReadByte(Native.At(site + 5)) != 0xE8)
             { Plugin.Log.LogError("Co-op camera: unexpected code, not installed"); return; }
+            int scrollRva = site + 10 + Marshal.ReadInt32(Native.At(site + 6));
+            scrollFor = (ScrollFn)Marshal.GetDelegateForFunctionPointer(Native.At(scrollRva), typeof(ScrollFn));
             stub = Native.AllocNear(64);
             if (stub == IntPtr.Zero) { Plugin.Log.LogError("Co-op camera: no memory near the game module"); return; }
             active = new IntPtr(stub.ToInt64() + 32);
@@ -86,6 +98,33 @@ namespace EterniaCoop
             Plugin.Log.LogMessage("Co-op camera installed.");
         }
 
+        // Battle thread, every frame while the battle menu is open (the camera isn't steered then, but it still moves).
+        public static void Paused() { if (installed) GuardSnap(); }
+
+        // Undoes the menu's snap to the leader (see the top). Only a jump of more than SnapLimit that lands on the
+        // leader's spot (within one easing step) counts: the camera showing a spell's target, easing and the menu's
+        // manual pan (hold Square, about 8-12 pixels a frame) pass untouched.
+        static void GuardSnap()
+        {
+            short now = Marshal.ReadInt16(Native.At(Rva.CamScrollNow));
+            if (haveScroll && Marshal.ReadByte(active) != 0 && Math.Abs(now - lastScroll) > SnapLimit && OnLeader(now))
+            {
+                Marshal.WriteInt16(Native.At(Rva.CamScrollNow), lastScroll);
+                Marshal.WriteInt16(Native.At(Rva.CamScroll), lastScroll);
+                now = lastScroll;
+            }
+            lastScroll = now;
+            haveScroll = true;
+        }
+
+        static bool OnLeader(short now)
+        {
+            IntPtr actors = Battle.Actors();
+            if (actors == IntPtr.Zero || scrollFor == null) return false;
+            int leaderScroll = scrollFor(Marshal.ReadInt16(actors, Actor.X) & 0xFFFF);
+            return Math.Abs(now - leaderScroll) <= 16;   // resuming, the camera has already eased one step from there
+        }
+
         // Battle thread, every battle frame, before the game's camera code runs.
         public static void Update(bool[] humanSlots)
         {
@@ -98,13 +137,22 @@ namespace EterniaCoop
             {
                 lastActors = actors.ToInt64();
                 tracking = false;
+                haveScroll = false;
+                Marshal.WriteByte(active, 0);
                 baseZoom = zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom));
             }
 
+            GuardSnap();
+
             bool enabled = Settings.CoopCamera.Value && Marshal.ReadByte(Native.At(Rva.CamMode)) == 0 &&
                 (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0;
+            // Frame the human players' characters that are still standing (Battle.PartySlot skips knocked-out ones), as
+            // long as two or more people are playing: if player 1's character is down, follow the others.
+            int players = 0;
+            for (int p = 0; p < 4; p++) if (humanSlots[p]) players++;
             int min = int.MaxValue, max = int.MinValue, humans = 0, leaderX = 0;
-            if (enabled)
+            bool leaderUp = false;
+            if (enabled && players >= 2)
                 for (int i = 0; i < Rva.ActorCount; i++)
                 {
                     IntPtr a = Battle.ActorAt(actors, i);
@@ -113,13 +161,13 @@ namespace EterniaCoop
                     int ax = Marshal.ReadInt16(a, Actor.X);
                     if (ax < min) min = ax;
                     if (ax > max) max = ax;
-                    if (slot == 0) leaderX = ax;
+                    if (slot == 0) { leaderX = ax; leaderUp = true; }
                     humans++;
                 }
 
-            if (humans < 2)
+            if (humans < 1)
             {
-                // One player (or a scripted / paused camera): the game's camera. Ease a zoom we changed back first.
+                // One player, everyone down, or a scripted / paused camera: the game's camera. Ease a zoom we changed back first.
                 // When we take over again, start from wherever the camera is by then (no jump back after a spell).
                 Marshal.WriteByte(active, 0);
                 resume = true;
@@ -161,7 +209,7 @@ namespace EterniaCoop
             float room = halfView - Edge * 16f;
             // Never let the lead (or a too-wide spread) push anyone out: keep everyone in reach, player 1 above all.
             mid = Math.Max(max - room, Math.Min(min + room, mid));
-            if (Math.Abs(leaderX - mid) > room) mid = leaderX + (mid > leaderX ? room : -room);
+            if (leaderUp && Math.Abs(leaderX - mid) > room) mid = leaderX + (mid > leaderX ? room : -room);
 
             // Zoom out promptly (nobody slips off screen), zoom back in slowly and only after the players have stayed
             // together for a moment - so the camera doesn't breathe in and out with every step.

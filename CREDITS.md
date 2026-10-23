@@ -15,6 +15,12 @@
 
 Their license texts are in `licenses\`.
 
+## Works with (not bundled - thank you!)
+- **Font of Eternia** by **Jyrakos** ([FontStruct](https://fontstruct.com/fontstructions/show/1230779)) and
+  **[Font Replacer](https://www.nexusmods.com/talesofeterniaremastered/mods/4)** by **vitruvianesse**: when you have
+  them installed, the controller manager uses the same font as the rest of the game. Eternia Co-op doesn't include,
+  copy or change the font - it only uses the copy Font Replacer has loaded into the game.
+
 ## Inspiration
 - [arise-multiplayer](https://github.com/EusthEnoptEron/arise-multiplayer) by **EusthEnoptEron** - local
   multiplayer for Tales of Arise; showed that bringing co-op to a single-player Tales port is possible.

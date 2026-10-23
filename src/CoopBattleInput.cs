@@ -63,6 +63,7 @@ namespace EterniaCoop
                 // works, with clean presses. No pad swapping while the menu is up; the other blocks stay empty.
                 if ((Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0)
                 {
+                    CoopCamera.Paused();
                     int opener = Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1;   // -1: paused with Start, no owner
                     for (int p = 1; p < 4; p++)
                     {

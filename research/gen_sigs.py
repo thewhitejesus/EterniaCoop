@@ -65,6 +65,7 @@ SITES = [
     ("CamZoom",        "Camera", 0xD3BBA, "data", 0x12CEB78, 0),
     ("CamScroll",      "Camera", 0xD3BAD, "data", 0x12CEAB8, 0),     # scroll = -(centre x >> 4), stored after FUN_D6420
     ("CamMode",        "Camera", 0xD3B28, "data", 0x12CEB7F, 0),
+    ("CamScrollNow",   "Camera", 0xD70BB, "data", 0x12CEA98, 0),     # the scroll shown now (eases toward CamScroll); set in FUN_D6480
     # Rumble
     ("ApplyHit",       "Rumble", 0x8E320, "func"),
     ("HitPaused",      "Rumble", 0x8E32A, "data", 0x12CEB7A, 0),

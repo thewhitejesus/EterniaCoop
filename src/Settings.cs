@@ -24,7 +24,9 @@ namespace EterniaCoop
                 "Give each controller its own player automatically (checked every second, so plugging in or out works).");
             KeyboardPlayer = c.Bind("Coop", "KeyboardPlayer", 0,
                 "Which player (0-3) gets keyboard + mouse. Controllers fill the other players in order. " +
-                "0 = normal (player 1 also gets the first controller). 1 = test co-op with the keyboard as player 2.");
+                "0 = normal (player 1 also gets the first controller). 1 = test co-op with the keyboard as player 2. " +
+                "-1 = off: keyboard and mouse control nobody (only controllers play - e.g. with Parsec, where guests' " +
+                "keyboards act as the host's). The controller manager can also set any single device to Off.");
             JoinMode = c.Bind("Coop", "JoinMode", 1,
                 "Control mode set for party slots 2-4 when a player gets a controller (1 = Semi-Auto). " +
                 "When a controller disconnects that slot goes back to Auto (0).");

@@ -80,6 +80,8 @@ namespace EterniaCoop
                 "EB ?? 0F B7 4C 1A 10 E8 ?? ?? ?? ?? 66 89 05 ?? ?? ?? ?? 41 80 FA 01 73 ?? 0F B7 05 ?? ?? ?? ??"),
             new Site("CamMode", "Camera", new[] { 0xD3B28 }, 9, SiteKind.Data, 4, 8, 0, null, 0,
                 "45 84 C0 74 ?? 41 8D 40 FF 44 0F B6 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? 48 98"),
+            new Site("CamScrollNow", "Camera", new[] { 0xD70BB }, 8, SiteKind.Data, 3, 7, 0, null, 0,
+                "41 8B C8 C1 F9 04 F7 D9 66 89 0D ?? ?? ?? ?? E9 ?? ?? ?? ?? 44 0F BF 05 ?? ?? ?? ??"),
             new Site("ApplyHit", "Rumble", new[] { 0x8E320 }, 0, SiteKind.Func, 0, 2, 0, null, 0,
                 "40 53 56 57 41 56 48 83 EC 28 80 3D ?? ?? ?? ?? 00 49 8B F9"),
             new Site("HitPaused", "Rumble", new[] { 0x8E32A }, 6, SiteKind.Data, 2, 7, 0, null, 0,

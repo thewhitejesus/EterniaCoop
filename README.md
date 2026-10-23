@@ -19,6 +19,12 @@ per-character input slots - this mod fills them again.
 - **Semi-Auto / Auto tab for every party member** in the Skills menu (the game normally shows it only for the leader).
 - **Control modes stay set after battles** (the game used to reset them to Auto).
 - **Per-player rumble:** each player's controller rumbles for their own character's hits, like the PS1.
+- **Co-op camera:** with two or more players, the battle camera centres between everyone and zooms out smoothly as
+  you spread apart, so nobody fights off-screen. If player 1's character is knocked out it follows the others; spell
+  cameras and the battle menu's manual pan work as usual.
+- **Controller manager** (F1, or hold L3 + R3): choose which controller is which player - fully usable with a
+  controller, drawn in Tales of Eternia's own style with the party's artwork from your copy of the game. Any device
+  can be turned off (handy for Parsec).
 - **Survives game updates:** the mod finds every spot it uses in the game's code by its signature, so when an update
   moves code around it adapts by itself ("adapted to a game update" on the main menu). Anything it can't find with
   certainty stays off - nothing is half-applied - and works alongside other mods that change the game's code.
@@ -82,12 +88,17 @@ With **100% Drop and Steal Rate** installed (it opens its own menu with F1), the
 **Guests from Phantasia** installed (it toggles its guest with L3 + R3), the controller shortcut is **LB + RB + Back**.
 The game ignores input while it's open.
 
-- **Controller:** LB / RB or D-pad left/right moves *that* controller to the previous/next player. Back resets everything to automatic.
-- **Keyboard:** Up/Down picks a row, Left/Right changes its player, R resets to automatic.
+- **Any controller:** D-pad or left stick up/down picks a row, left/right changes its player (Off, P1-P4; hold to
+  repeat). **A** jumps to your own controller's row, **LB / RB** move your own controller, **Y** resets everything
+  to automatic, **B** closes.
+- **Keyboard:** arrow keys (or W/A/S/D) the same, R resets to automatic, Esc or Enter closes.
+- **Off:** a device set to Off controls nobody - e.g. turn off Keyboard & Mouse when playing over Parsec, where
+  guests' keyboards act as the host's (or set `KeyboardPlayer = -1`).
 - A row lights up when you press something on that device, so you can tell identical controllers apart.
-- Close with F1, Esc, or L3 + R3. Choices are saved; if controllers are plugged in a different order next time,
-  they may swap - just reopen the manager.
+- Choices are saved; if controllers are plugged in a different order next time, they may swap - just reopen the manager.
 - Player 1 always keeps at least one device (otherwise nobody could use the menus).
+- It's drawn with the game's own font - or, with **Font Replacer** (vitruvianesse) and **Font of Eternia** (Jyrakos)
+  installed, with that font, to match the rest of the game. Neither is included with this mod.
 
 ## Playing online (Parsec / Steam Remote Play)
 
@@ -123,12 +134,14 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `ForcePlayerCount` | 4 | Number of players. 0 turns co-op off. |
 | `AutoAssignControllers` | true | Assign controllers to players automatically (and enable the controller manager). |
 | `DeviceAssignments` | (empty) | Saved by the controller manager. Clear it to go back to fully automatic. |
-| `KeyboardPlayer` | 0 | Player who gets keyboard + mouse (0 = player 1). Set 1 to test alone: keyboard = player 2. |
+| `KeyboardPlayer` | 0 | Player who gets keyboard + mouse (0 = player 1). Set 1 to test alone: keyboard = player 2. -1 = off (e.g. for Parsec). |
 | `JoinMode` | 1 | Mode for a party slot when its player connects (1 = Semi-Auto). |
 | `KeepSlotModesAfterBattle` | true | Don't reset players 2–4 to Auto after battles. |
 | `MenuModeTabForAll` | true | Semi-Auto/Auto tab in the Skills menu for everyone. |
 | `LiveModeSync` | true | Join / drop out mid-battle. |
 | `PerPlayerRumble` | true | Rumble each player's own controller. Follows the game's rumble option. |
+| `CoopCamera` | true | With 2+ players, the battle camera follows everyone and zooms out as they spread apart. Off = the game's camera. |
+| `CoopCameraMaxZoom` | 720 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest). Beyond about 730 the view reaches past the bottom of the battle picture. |
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |
 | `ShowWatermark` | true | The corner label on the main menu. |
