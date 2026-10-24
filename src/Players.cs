@@ -23,6 +23,9 @@ namespace EterniaCoop
         // player 1's input only, so whoever opened it (Start, or Tab on the keyboard) can use and close it - the
         // closest we get to the PS1, where each player had their own menu.
         public static bool ShareWithPlayer1;
+        // Outside battle the game listens to player 1 only. With FieldPlayer 1-3 (Settings.FieldControl, applied by
+        // Plugin while no battle is running), player 1's input takes that player's devices instead.
+        public static int FieldPlayer;
 #if COOP_DEBUG
         public static volatile bool ForceBlankExtraPlayers;   // research toggle (Numpad 0)
 #endif
@@ -114,6 +117,9 @@ namespace EterniaCoop
             if (ShareWithPlayer1)
                 for (int p = 1; p < 4; p++)
                     foreach (var d in result[p]) if (!result[0].Contains(d)) result[0].Add(d);
+            // Field control handed over (only when that player has a device: player 1 must never be left with none).
+            if (FieldPlayer > 0 && FieldPlayer < 4 && result[FieldPlayer].Count > 0)
+                result[0] = new List<InputDevice>(result[FieldPlayer]);
             return result;
         }
 

@@ -11,7 +11,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.4.1";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.5.0";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -40,9 +40,13 @@ namespace EterniaCoop
             if (CoopActive && Players.InputManager != null && Settings.AutoAssignControllers.Value) ControllerManager.Update();
             // Battle menu opened or closed: hand every device to player 1 (or back) right away, not on the next tick.
             bool share = CoopActive && Settings.AutoAssignControllers.Value && Battle.MenuOpen();
-            if (share != Players.ShareWithPlayer1 && Players.InputManager != null)
+            // Field control: outside battle, player 1's controls go to the chosen player; back the moment a battle starts.
+            int field = CoopActive && Settings.AutoAssignControllers.Value && Features.CoopBattle && Native.Base != 0 &&
+                Battle.Actors() == System.IntPtr.Zero ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
+            if ((share != Players.ShareWithPlayer1 || field != Players.FieldPlayer) && Players.InputManager != null)
             {
                 Players.ShareWithPlayer1 = share;
+                Players.FieldPlayer = field;
                 Players.AutoAssign(Settings.KeyboardPlayer.Value);
             }
             if (CoopActive && Players.InputManager != null && Time.unscaledTime >= nextAssign)

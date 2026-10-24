@@ -18,7 +18,7 @@ namespace EterniaCoop
         {
             public string Name;
             public int Player;     // -1 Off, 0-3
-            public bool Selected, Active;
+            public bool Selected, Active, NoOff;   // NoOff: a setting row (Field control) without the Off choice
         }
 
         static bool tried;
@@ -428,11 +428,14 @@ namespace EterniaCoop
                 Place(r.Activity.rectTransform, 0, 4, 5, rh - 8);
                 foreach (var a in r.Cursor) a.enabled = row.Selected;
                 PlaceArrows(r.Cursor, 12, rh / 2, 18, 10);
-                Text(r.Name, 52, 0, pillsX - 64, rh, row.Name, row.Selected ? Yellow : new Color(0.92f, 0.94f, 1f));
+                Text(r.Name, 52, 0, pillsX - 64, rh, row.Name,
+                    row.Selected ? Yellow : row.NoOff ? new Color(0.62f, 0.78f, 1f) : new Color(0.92f, 0.94f, 1f));
 
                 for (int k = 0; k < 5; k++)
                 {
                     int p = k - 1;
+                    r.Pills[k].Rt.gameObject.SetActive(!(row.NoOff && p < 0));
+                    if (row.NoOff && p < 0) continue;
                     bool on = row.Player == p;
                     Color c = p < 0 ? new Color(0.70f, 0.72f, 0.80f) : PlayerColors[p];
                     float ph = rh * 0.70f;

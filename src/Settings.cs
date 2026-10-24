@@ -6,7 +6,7 @@ namespace EterniaCoop
     static class Settings
     {
         // [Coop]
-        public static ConfigEntry<int> PlayerCount, KeyboardPlayer, JoinMode;
+        public static ConfigEntry<int> PlayerCount, KeyboardPlayer, JoinMode, FieldControl;
         public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera;
         public static ConfigEntry<int> CoopCameraMaxZoom;
         public static ConfigEntry<float> RumbleSeconds;
@@ -27,6 +27,10 @@ namespace EterniaCoop
                 "0 = normal (player 1 also gets the first controller). 1 = test co-op with the keyboard as player 2. " +
                 "-1 = off: keyboard and mouse control nobody (only controllers play - e.g. with Parsec, where guests' " +
                 "keyboards act as the host's). The controller manager can also set any single device to Off.");
+            FieldControl = c.Bind("Coop", "FieldControl", 0,
+                "Which player (0-3) controls the field and the menus outside battle (walking, the camp menu: equipment, " +
+                "artes...). The game itself only listens to player 1 there; with 1-3, player 1's controls go to that " +
+                "player instead until the next battle starts. Battles are unaffected. Also set in the controller manager.");
             JoinMode = c.Bind("Coop", "JoinMode", 1,
                 "Control mode set for party slots 2-4 when a player gets a controller (1 = Semi-Auto). " +
                 "When a controller disconnects that slot goes back to Auto (0).");

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0 - 2026-10-24
+- **Field control:** a new row in the controller manager picks which player controls the field and the menus
+  outside battle (walking, the camp menu - equipment, artes...). The game only listens to player 1 there; with
+  Field control set to another player, player 1's controls go to that player's controller until the next battle
+  starts. Battles are unaffected: everyone controls their own character as before. Default: player 1 (setting
+  `FieldControl`). Thanks to Seifersythe for the idea.
+
 ## 1.4.1 - 2026-10-24
 - **Players 2-4 can switch targets** (hold R1 and press left/right), like on the PS1. Holding the target button
   pauses the battle the same way the battle menu does, and the mod mistook it for the menu and cleared that player's

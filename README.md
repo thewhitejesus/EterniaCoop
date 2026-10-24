@@ -25,6 +25,8 @@ per-character input slots - this mod fills them again.
 - **Controller manager** (F1, or hold L3 + R3): choose which controller is which player - fully usable with a
   controller, drawn in Tales of Eternia's own style with the party's artwork from your copy of the game. Any device
   can be turned off (handy for Parsec).
+- **Field control:** pick which player walks the party and uses the camp menu outside battle (equipment, artes...),
+  so everyone can manage their own character. Battles are unaffected.
 - **Survives game updates:** the mod finds every spot it uses in the game's code by its signature, so when an update
   moves code around it adapts by itself ("adapted to a game update" on the main menu). Anything it can't find with
   certainty stays off - nothing is half-applied - and works alongside other mods that change the game's code.
@@ -135,6 +137,7 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `AutoAssignControllers` | true | Assign controllers to players automatically (and enable the controller manager). |
 | `DeviceAssignments` | (empty) | Saved by the controller manager. Clear it to go back to fully automatic. |
 | `KeyboardPlayer` | 0 | Player who gets keyboard + mouse (0 = player 1). Set 1 to test alone: keyboard = player 2. -1 = off (e.g. for Parsec). |
+| `FieldControl` | 0 | Player (0-3) who controls the field and menus outside battle (0 = player 1). Also in the controller manager. |
 | `JoinMode` | 1 | Mode for a party slot when its player connects (1 = Semi-Auto). |
 | `KeepSlotModesAfterBattle` | true | Don't reset players 2–4 to Auto after battles. |
 | `MenuModeTabForAll` | true | Semi-Auto/Auto tab in the Skills menu for everyone. |
@@ -150,7 +153,8 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 ## Known limitations
 
 - **Tested with 2 players** (controller + keyboard). 3–4 players and Parsec should work - please report how it goes.
-- **Menus, the field and cutscenes are controlled by player 1 only**, as on the PS1. Co-op is for battles.
+- **Menus, the field and cutscenes are controlled by one player**, player 1 as on the PS1 (or whoever Field control
+  picks). Co-op is for battles.
   Any player can open the **battle menu** (Start, or Tab on the keyboard): while it's open every controller and the
   keyboard/mouse act as player 1, so whoever opened it can use and close it.
 - **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from

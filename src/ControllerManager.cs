@@ -5,6 +5,7 @@
 //   Any controller: D-pad or left stick up/down picks a row, left/right changes its player (held: repeats),
 //                A jumps to your own controller's row, LB/RB move your own controller, Y = automatic, B closes.
 //   Keyboard:    arrows (or W/A/S/D) the same, R = automatic, Esc / Enter close.
+//   The last row, Field control, picks who controls the field and the menus outside battle (Settings.FieldControl).
 // The game gets no input while it's open. Choices are saved per device in Settings.DeviceAssignments.
 using System.Collections.Generic;
 using UnityEngine;
@@ -185,7 +186,8 @@ namespace EterniaCoop
             var devices = Players.Devices();
             if (devices.Count == 0) return;
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
-            if (selected >= devices.Count) selected = devices.Count - 1;
+            int rows = devices.Count + 1;   // the devices, then the Field control row
+            if (selected >= rows) selected = rows - 1;
             if (selected < 0) selected = 0;
             bool justOpened = Time.unscaledTime - openedAt < 0.3f;   // buttons still held from the shortcut
 
@@ -204,8 +206,8 @@ namespace EterniaCoop
                 bool b = Tapped(pad, "B", pad.buttonEast.isPressed, false);
                 if (justOpened) continue;
 
-                if (up) selected = (selected + devices.Count - 1) % devices.Count;
-                if (down) selected = (selected + 1) % devices.Count;
+                if (up) selected = (selected + rows - 1) % rows;
+                if (down) selected = (selected + 1) % rows;
                 if (left) Move(devices, players, selected, -1);
                 if (right) Move(devices, players, selected, +1);
                 if (a) selected = i;
@@ -218,8 +220,8 @@ namespace EterniaCoop
             if (kb != null)
             {
                 if (kb.anyKey.isPressed) lastActive[kb.deviceId] = Time.unscaledTime;
-                if (KeyRepeat(kb, Key.UpArrow, Key.W)) selected = (selected + devices.Count - 1) % devices.Count;
-                if (KeyRepeat(kb, Key.DownArrow, Key.S)) selected = (selected + 1) % devices.Count;
+                if (KeyRepeat(kb, Key.UpArrow, Key.W)) selected = (selected + rows - 1) % rows;
+                if (KeyRepeat(kb, Key.DownArrow, Key.S)) selected = (selected + 1) % rows;
                 if (KeyRepeat(kb, Key.LeftArrow, Key.A)) Move(devices, players, selected, -1);
                 if (KeyRepeat(kb, Key.RightArrow, Key.D)) Move(devices, players, selected, +1);
                 if (KeyPressed(kb, Key.R)) Reset();
@@ -281,6 +283,13 @@ namespace EterniaCoop
         // Choices in order: Off, Player 1-4 (wrapping).
         static void Move(List<InputDevice> devices, int[] players, int index, int step)
         {
+            if (index >= devices.Count)   // the Field control row: Player 1-4
+            {
+                int field = (Mathf.Clamp(Settings.FieldControl.Value, 0, 3) + step + 4) % 4;
+                Settings.FieldControl.Value = field;
+                Say("Player " + (field + 1) + " controls the field and menus outside battle.");
+                return;
+            }
             int from = players[index];
             int to = (from + 1 + step + 5) % 5 - 1;
             // Player 1 must keep a device: with none it would listen to every device and nobody could use the menus.
@@ -353,6 +362,11 @@ namespace EterniaCoop
                     Name = Name(devices, i) + (Players.IsManual(devices[i]) ? "" : "  (auto)"),
                     Player = players[i], Selected = i == selected, Active = RecentlyActive(devices[i]),
                 });
+            viewRows.Add(new ManagerView.Row
+            {
+                Name = "Field control", Player = Mathf.Clamp(Settings.FieldControl.Value, 0, 3),
+                Selected = selected == devices.Count, NoOff = true,
+            });
             string note = ConflictNote();
             ManagerView.Show(viewRows, HintList, Footer(), note == "" ? "" : "Shortcuts changed to avoid other mods" + note,
                 message != null && Time.unscaledTime < messageUntil ? message : null);
