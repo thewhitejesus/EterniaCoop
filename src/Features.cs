@@ -18,7 +18,7 @@ namespace EterniaCoop
         static readonly string[] KeepModesSites = { "ResetSlot2", "ResetSlot3", "ResetSlot4" };
         static readonly string[] MenuTabSites = { "TabJe", "TabCursor1", "TabCursor2", "TabConfirm", "TabDraw" };
         static readonly string[] BattleSites =
-            { "BattleCommands", "BuildPad", "Pad", "PadHeld", "BattleFlags", "MenuOpener", "CmdBlocks", "ActorArray" };
+            { "BattleCommands", "BuildPad", "Pad", "PadHeld", "BattleFlags", "MenuOpener", "TargetActor", "TargetSwitchCall", "CmdBlocks", "ActorArray" };
         static readonly string[] RumbleSites =
         {
             "ApplyHit", "HitPaused", "RumbleAtkBlock", "RumbleAtkSide", "GameOptions", "RumbleStrength", "RumbleOption",
@@ -61,7 +61,7 @@ namespace EterniaCoop
             if (Sites.Resolved("CmdBlocks")) Rva.CmdBlocks = Sites.Get("CmdBlocks").Target;
             if (Sites.Resolved("ActorArray")) Rva.ActorArray = Sites.Get("ActorArray").Target;
             if (Sites.Resolved("MenuOpener")) Rva.MenuOpener = Sites.Get("MenuOpener").Target;
-            if (Sites.Resolved("BattleFlags")) Rva.BattleFlags = Sites.Get("BattleFlags").Target;
+            if (Sites.Resolved("TargetActor")) Rva.TargetActor = Sites.Get("TargetActor").Target;            if (Sites.Resolved("BattleFlags")) Rva.BattleFlags = Sites.Get("BattleFlags").Target;
             else if (Sites.Resolved("HitPaused")) Rva.BattleFlags = Sites.Get("HitPaused").Target;
             if (Sites.Resolved("GameOptions")) Rva.GameOptions = Sites.Get("GameOptions").Target;
             if (Sites.Resolved("CamZoom")) Rva.CamZoom = Sites.Get("CamZoom").Target;

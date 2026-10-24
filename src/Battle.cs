@@ -22,11 +22,23 @@ namespace EterniaCoop
 
         public static IntPtr CmdBlock(int slot) { return Native.At(Rva.CmdBlocks + slot * Rva.CmdSize); }
 
-        // In a battle with its menu open (the battle is paused). Rva.BattleFlags is checked by Features.CoopBattle.
+        // In a battle with its menu open (the battle is paused). Holding the target button pauses the battle the same
+        // way, but that isn't the menu. Rva.BattleFlags is checked by Features.CoopBattle.
         public static bool MenuOpen()
         {
             return Features.CoopBattle && Native.Base != 0 && Actors() != IntPtr.Zero &&
-                (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0;
+                (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0 && TargetingBlock() < 0;
+        }
+
+        // The command block (0-3) of the party member choosing a target right now (holding the target button,
+        // outside the battle menu), or -1.
+        public static int TargetingBlock()
+        {
+            IntPtr actors = Actors();
+            int t = Marshal.ReadByte(Native.At(Rva.TargetActor));
+            if (actors == IntPtr.Zero || t == 0 || t > Rva.ActorCount || Marshal.ReadByte(Native.At(Rva.MenuOpener)) != 0) return -1;
+            int block = Marshal.ReadByte(ActorAt(actors, t - 1), Actor.Block);
+            return block < 4 ? block : -1;
         }
     }
 }

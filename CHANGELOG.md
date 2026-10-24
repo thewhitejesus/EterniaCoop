@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1 - 2026-10-24
+- **Players 2-4 can switch targets** (hold R1 and press left/right), like on the PS1. Holding the target button
+  pauses the battle the same way the battle menu does, and the mod mistook it for the menu and cleared that player's
+  buttons, ending it at once; and the game reads the direction from player 1's controller only. The targeting
+  player's input now keeps running, and the target switch reads their own controller. Thanks to Jenon08 for the report.
+
 ## 1.4.0 - 2026-10-22
 - **Co-op camera:** with two or more human players, the battle camera centres between their characters and zooms
   out as they spread apart (back in, after a moment, as they come together), with smooth spring easing and a little

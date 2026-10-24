@@ -56,6 +56,10 @@ SITES = [
     ("PadHeld",        "CoopBattle", 0x1121EF, "data", 0x8C9184, 4),   # in FUN_1121E0; also gives Pad
     ("BattleFlags",    "CoopBattle", 0xD2EE3, "data", 0x12CEB7A, 0),
     ("MenuOpener",     "CoopBattle", 0x110130, "data", 0x12CEB8C, 0),
+    # Target selection: a fresh target-button press (+4 bit 0x200) in a party actor's block makes it the targeting
+    # actor (index + 1, here); while it holds the button the battle pauses and FUN_113EA0 switches its target.
+    ("TargetActor",    "CoopBattle", 0xD4231, "data", 0x12CEB8D, 0),
+    ("TargetSwitchCall", "CoopBattle", 0xD448D, "code"),   # call FUN_113EA0 (target switching) for the targeting actor
     ("CmdBlocks",      "CoopBattle", 0x112204, "data", 0x12CEBA0, 0),
     ("ActorArray",     "CoopBattle", 0xD3090, "data", 0x12CECD8, 0),
     # Camera (co-op camera): the battle camera's normal path loads the followed actor's x here, then calls the

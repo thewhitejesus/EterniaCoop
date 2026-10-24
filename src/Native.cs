@@ -28,6 +28,9 @@ namespace EterniaCoop
         public static int BattleFlags = 0x12CEB7A;
         // Battle menu owner (byte): command block index + 1 of whoever opened it with the menu button, 0 = none.
         public static int MenuOpener = 0x12CEB8C;
+        // Target selection (hold the target button): the targeting actor's index + 1, 0 = none. While set and its
+        // button is held, the battle pauses (BattleFlags bit 0, like the menu) and FUN_113EA0 switches its target.
+        public static int TargetActor = 0x12CEB8D;
 
         // Party (menu/save side): member ids (4 x short) and control mode per slot (byte: 0 Auto, 1 Semi-Auto).
         public static int PartyIds = 0x11CAD10, SlotModes = 0x11CAD38;
@@ -39,7 +42,6 @@ namespace EterniaCoop
         public static int BattleCommands = 0x1121E0;   // FUN_1121E0(uint* padHeld): pad -> slot 0's command block
         public static int BuildPad = 0x19DBC0;         // FUN_19DBC0(pad, rate, flag): input object (player 1) -> PSP pad
         public static int ApplyHit = 0x8E320;          // FUN_8E320(type, flags, hit, attacker, victim)
-
         // Game options object (pointer); +0x21 = rumble on.
         public static int GameOptions = 0x6449E0;
 
