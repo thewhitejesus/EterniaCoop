@@ -155,8 +155,8 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 - **Tested with 2 players** (controller + keyboard). 3–4 players and Parsec should work - please report how it goes.
 - **Menus, the field and cutscenes are controlled by one player**, player 1 as on the PS1 (or whoever Field control
   picks). Co-op is for battles.
-  Any player can open the **battle menu** (Start, or Tab on the keyboard): while it's open every controller and the
-  keyboard/mouse act as player 1, so whoever opened it can use and close it.
+  Any player can open the **battle menu** (Start, or Tab on the keyboard): while it's open only the player who opened
+  it controls it (everyone, if the battle was paused with Start).
 - **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
   so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). BepInEx 6 mods (**Uncropped Backgrounds,

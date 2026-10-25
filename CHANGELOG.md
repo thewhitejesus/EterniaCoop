@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.1 - 2026-10-25
+- **The battle menu only answers to whoever opened it.** Before, every controller could move it, so player 1
+  holding a direction mid-combo could drag player 2's menu cursor along. When player 1 opens it, only player 1
+  controls it, as in the normal game; when the battle is paused with Start (nobody owns the menu), everyone can still
+  use it. Thanks to Jenon08 for the report.
+
 ## 1.5.0 - 2026-10-24
 - **Field control:** a new row in the controller manager picks which player controls the field and the menus
   outside battle (walking, the camp menu - equipment, artes...). The game only listens to player 1 there; with

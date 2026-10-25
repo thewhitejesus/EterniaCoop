@@ -11,7 +11,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.5.0";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.5.1";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -43,9 +43,13 @@ namespace EterniaCoop
             // Field control: outside battle, player 1's controls go to the chosen player; back the moment a battle starts.
             int field = CoopActive && Settings.AutoAssignControllers.Value && Features.CoopBattle && Native.Base != 0 &&
                 Battle.Actors() == System.IntPtr.Zero ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
-            if ((share != Players.ShareWithPlayer1 || field != Players.FieldPlayer) && Players.InputManager != null)
+            // The battle menu belongs to whoever opened it (block + 1 in Rva.MenuOpener; 0 = paused with Start, no owner).
+            int owner = share ? System.Runtime.InteropServices.Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1 : -1;
+            if ((share != Players.ShareWithPlayer1 || field != Players.FieldPlayer || owner != Players.MenuOwner) &&
+                Players.InputManager != null)
             {
                 Players.ShareWithPlayer1 = share;
+                Players.MenuOwner = owner;
                 Players.FieldPlayer = field;
                 Players.AutoAssign(Settings.KeyboardPlayer.Value);
             }

@@ -60,8 +60,9 @@ namespace EterniaCoop
                 // icon row reads the opener's command block (FUN_10F770: +8 pressed buttons/D-pad, +0 held directions),
                 // while the submenus read player 1's pad. Players 2-4's own pads lack the button latches menus need
                 // (those helpers run for player 1 only - the spinning-camera fix), but player 1 meanwhile listens to
-                // every device (Players.ShareWithPlayer1), so the opener's block gets player 1's: anyone's controller
-                // works, with clean presses. No pad swapping while the menu is up; the other blocks stay empty.
+                // the opener's devices only (Players.ShareWithPlayer1 / MenuOwner; everyone's when paused with Start),
+                // so the opener's block gets player 1's, with clean presses. No pad swapping while the menu is up; the
+                // other blocks stay empty.
                 if ((Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0)
                 {
                     CoopCamera.Paused();

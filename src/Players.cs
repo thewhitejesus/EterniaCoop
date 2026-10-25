@@ -23,6 +23,9 @@ namespace EterniaCoop
         // player 1's input only, so whoever opened it (Start, or Tab on the keyboard) can use and close it - the
         // closest we get to the PS1, where each player had their own menu.
         public static bool ShareWithPlayer1;
+        // Who opened the battle menu (0-3), or -1 when nobody owns it (paused with Start): only the owner's devices drive
+        // it, so another player still holding a direction mid-combo can't move the menu cursor.
+        public static int MenuOwner = -1;
         // Outside battle the game listens to player 1 only. With FieldPlayer 1-3 (Settings.FieldControl, applied by
         // Plugin while no battle is running), player 1's input takes that player's devices instead.
         public static int FieldPlayer;
@@ -114,7 +117,9 @@ namespace EterniaCoop
                 result[players[i]].Add(devices[i]);
                 if (devices[i] is Keyboard && Mouse.current != null) result[players[i]].Add(Mouse.current);
             }
-            if (ShareWithPlayer1)
+            if (ShareWithPlayer1 && MenuOwner > 0 && MenuOwner < 4 && result[MenuOwner].Count > 0)
+                result[0] = new List<InputDevice>(result[MenuOwner]);   // the owner's devices only
+            else if (ShareWithPlayer1 && MenuOwner < 0)
                 for (int p = 1; p < 4; p++)
                     foreach (var d in result[p]) if (!result[0].Contains(d)) result[0].Add(d);
             // Field control handed over (only when that player has a device: player 1 must never be left with none).
