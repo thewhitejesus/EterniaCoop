@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2 - 2026-10-29
+- **Control modes stay as chosen.** When a player's controller reconnected (a wireless controller waking up, a
+  Parsec hiccup) or the party changed, the mod set that slot back to Semi-Auto - so a Manual choice (where the game
+  offers it) was lost again and again. Now a slot that's already Semi-Auto or Manual keeps its mode, and a slot that
+  went to Auto because its controller dropped gets its previous mode back when the controller returns. Thanks to
+  TenshioftheRain for the report.
+
 ## 1.5.1 - 2026-10-25
 - **The battle menu only answers to whoever opened it.** Before, every controller could move it, so player 1
   holding a direction mid-combo could drag player 2's menu cursor along. When player 1 opens it, only player 1
