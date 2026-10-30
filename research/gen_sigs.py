@@ -70,6 +70,16 @@ SITES = [
     ("CamScroll",      "Camera", 0xD3BAD, "data", 0x12CEAB8, 0),     # scroll = -(centre x >> 4), stored after FUN_D6420
     ("CamMode",        "Camera", 0xD3B28, "data", 0x12CEB7F, 0),
     ("CamScrollNow",   "Camera", 0xD70BB, "data", 0x12CEA98, 0),     # the scroll shown now (eases toward CamScroll); set in FUN_D6480
+    # Ground: the battle ground extension (BattleGround.cs). FUN_10D500 dispatches the stage's background routine,
+    # FUN_11E6F0 draws a textured quad, FUN_120F70 a solid rectangle (y read from the work struct, 0x11CE662);
+    # 0x594300 / 0x865A10 = global draw state (texture binding); 0x12CEA9C = the zoom shown now.
+    ("DrawBg",         "Ground", 0x10D500, "func"),
+    ("DrawQuad",       "Ground", 0x11E6F0, "func"),
+    ("FillRect",       "Ground", 0x120F70, "func"),
+    ("FillY",          "Ground", 0xDA519, "data", 0x11CE662, 0),
+    ("ZoomNow",        "Ground", 0xD7051, "data", 0x12CEA9C, 0),
+    ("DrawStateA",     "Ground", 0x11DBEF, "data", 0x594300, 0),
+    ("DrawStateB",     "Ground", 0x11D925, "data", 0x865A10, 0),
     # Rumble
     ("ApplyHit",       "Rumble", 0x8E320, "func"),
     ("HitPaused",      "Rumble", 0x8E32A, "data", 0x12CEB7A, 0),

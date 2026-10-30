@@ -48,10 +48,10 @@ namespace EterniaCoop
             CoopCamera = c.Bind("Coop", "CoopCamera", true,
                 "With two or more human players in battle, centre the camera between them and zoom out as they spread " +
                 "apart (back in as they come together). Off: the game's camera, which follows one character.");
-            CoopCameraMaxZoom = c.Bind("Coop", "CoopCameraMaxZoom", 720,
+            CoopCameraMaxZoom = c.Bind("Coop", "CoopCameraMaxZoom", 1040,
                 "How far the co-op camera may zoom out: 512 (no zoom), 668 (the game's own farthest, same as zooming out by " +
-                "hand), 720 (default). Beyond about 730 the view reaches below the battle background and a black band shows " +
-                "at the bottom; 1040 would fit the whole battlefield.");
+                "hand), 1040 (default: the whole battlefield). Past about 730 the view reaches below the battle picture; the mod " +
+                "continues the ground there, and on a stage whose ground it can't continue the camera stops at 720.");
             DeviceAssignments = c.Bind("Coop", "DeviceAssignments", "",
                 "Saved by the in-game controller manager (F1, or hold L3 + R3): device path = player (0-3), separated by ;. " +
                 "Devices not listed follow the automatic order. Clear it to go back to fully automatic.");
@@ -72,6 +72,13 @@ namespace EterniaCoop
             StrictVersionCheck = c.Bind("Advanced", "StrictVersionCheck", false,
                 "Stay off completely unless GameNative.dll is exactly the build this mod was made for. When off (default), " +
                 "a game update or another mod that changed GameNative.dll only turns off the features whose game code changed.");
+            // 1.6.0: the co-op camera zooms out to the whole field (1040). Configs written by 1.4-1.5 hold their default, 720.
+            var version = c.Bind("Advanced", "ConfigVersion", 0, "Settings format version (managed by the mod).");
+            if (version.Value < 1)
+            {
+                if (CoopCameraMaxZoom.Value == 720) CoopCameraMaxZoom.Value = 1040;
+                version.Value = 1;
+            }
         }
     }
 }

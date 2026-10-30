@@ -22,7 +22,7 @@ namespace EterniaCoop
         // 320 + 2 * (z - 0x200) / 3 PS1 pixels wide, and the field is 0x160 + 320 = 672 wide (the camera centre ranges
         // over 0..0x160 at zoom 0x200). The game's own limit (manual zoom) is 0x29C, a 424-pixel view; 0x410 shows
         // the whole field.
-        const short ZoomMin = 0x200, ZoomFullField = 0x410;
+        const short ZoomMin = 0x200, ZoomFullField = 0x410, ZoomNoBand = 720;
         const float Edge = 40f;            // room kept beyond the outermost players, PS1 pixels
         const float DeadZone = 6f;         // ignore spread changes smaller than this (no twitching), PS1 pixels
         const float LeadMax = 20f;         // look-ahead cap, PS1 pixels
@@ -31,6 +31,7 @@ namespace EterniaCoop
         static float ViewWidth(float z) { return 320f + 2f * (z - ZoomMin) / 3f; }
         static float ZoomFor(float width) { return ZoomMin + 1.5f * (width - 320f); }
 
+        public static int HumanPlayers;   // human players in the current battle (for WaterCompat)
         static IntPtr stub, active, centre;   // stub data: active (byte), centre x (ushort, world units = 1/16 px)
         static bool installed;
         static long lastActors;
@@ -150,6 +151,7 @@ namespace EterniaCoop
             // long as two or more people are playing: if player 1's character is down, follow the others.
             int players = 0;
             for (int p = 0; p < 4; p++) if (humanSlots[p]) players++;
+            HumanPlayers = players;
             int min = int.MaxValue, max = int.MinValue, humans = 0, leaderX = 0;
             bool leaderUp = false;
             if (enabled && players >= 2)
@@ -200,6 +202,8 @@ namespace EterniaCoop
             float spread = (max - min) / 16f;
             if (Math.Abs(spread - lastSpread) > DeadZone) lastSpread = spread;
             float limit = Math.Max(ZoomMin, Math.Min(ZoomFullField, Settings.CoopCameraMaxZoom.Value));
+            // Past ZoomNoBand the view reaches below the battle picture: only while the ground there can be continued.
+            if (!BattleGround.Usable) limit = Math.Min(limit, ZoomNoBand);
             float wantZoom = Math.Max(baseZoom, Math.Min(limit, ZoomFor(lastSpread + 2 * Edge)));
 
             // Centre between them. If they can't all fit even at the limit, keep player 1's character in view

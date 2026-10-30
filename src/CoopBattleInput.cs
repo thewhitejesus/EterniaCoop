@@ -86,6 +86,7 @@ namespace EterniaCoop
                 if (Features.Camera)
                 {
                     CoopCamera.Install();   // once
+                    BattleGround.Install();   // once, if Features.Ground
                     humans[0] = true;       // player 1's character
                     for (int p = 1; p < 4; p++) humans[p] = wanted[p] && p < players;
                     CoopCamera.Update(humans);

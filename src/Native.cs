@@ -52,6 +52,14 @@ namespace EterniaCoop
         public static int CamScroll = 0x12CEAB8;
         // The scroll the camera shows now (short); it eases toward CamScroll each frame.
         public static int CamScrollNow = 0x12CEA98;
+        // The zoom the camera shows now (short); it eases toward the zoom setting (CamZoom).
+        public static int ZoomNow = 0x12CEA9C;
+
+        // Battle background (BattleGround): FUN_10D500 dispatches the stage's background routine; FUN_11E6F0 draws one
+        // textured quad (primitive struct); FUN_120F70 draws a solid rectangle from the work struct (its y at FillY).
+        public static int DrawBg = 0x10D500, DrawQuad = 0x11E6F0, FillRect = 0x120F70, FillY = 0x11CE662;
+        // Global draw state (texture binding cache, see FUN_11D1C0 / FUN_11D8C0), 0x20 bytes each.
+        public static int DrawStateA = 0x594300, DrawStateB = 0x865A10;
     }
 
     // Battle actor field offsets.

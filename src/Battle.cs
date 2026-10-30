@@ -15,12 +15,38 @@ namespace EterniaCoop
         public static int PartySlot(IntPtr actor)
         {
             if (actor == IntPtr.Zero || Marshal.ReadInt16(actor, Actor.Kind) != 1 || Marshal.ReadByte(actor, Actor.Side) != 0) return -1;
-            long block = Marshal.ReadIntPtr(actor, Actor.CmdBlock).ToInt64() - (Native.Base + Rva.CmdBlocks);
+            long block = Marshal.ReadIntPtr(actor, Actor.CmdBlock).ToInt64() - CmdBase();
             if (block < 0 || block % Rva.CmdSize != 0 || block / Rva.CmdSize >= 4) return -1;
             return (int)(block / Rva.CmdSize);
         }
 
-        public static IntPtr CmdBlock(int slot) { return Native.At(Rva.CmdBlocks + slot * Rva.CmdSize); }
+        public static IntPtr CmdBlock(int slot) { return new IntPtr(CmdBase() + slot * Rva.CmdSize); }
+
+        // Where the command blocks are this battle: Rva.CmdBlocks in the game, but a mod may move them (Six Person
+        // Battle Expansion keeps six blocks, 0x20 apart, in its own memory and redirects the game's accesses). The party
+        // actors' block pointers (+0xF0, block index at +0x56) say where they really are; worked out once per battle.
+        static long cmdBase, cmdBaseActors;
+        public static long CmdBase()
+        {
+            IntPtr actors = Actors();
+            long fallback = Native.Base + Rva.CmdBlocks;
+            if (actors == IntPtr.Zero) return fallback;
+            if (actors.ToInt64() == cmdBaseActors && cmdBase != 0) return cmdBase;
+            for (int i = 0; i < Rva.ActorCount; i++)
+            {
+                IntPtr a = ActorAt(actors, i);
+                short kind = Marshal.ReadInt16(a, Actor.Kind);
+                long ptr = Marshal.ReadIntPtr(a, Actor.CmdBlock).ToInt64();
+                if ((kind != 1 && kind != 2) || Marshal.ReadByte(a, Actor.Side) != 0 || ptr == 0) continue;
+                long b = ptr - Marshal.ReadByte(a, Actor.Block) * Rva.CmdSize;
+                if (b != fallback && cmdBaseActors != actors.ToInt64())
+                    Plugin.Log.LogMessage("Battle command blocks moved by another mod: using " + b.ToString("X") + ".");
+                cmdBase = b;
+                cmdBaseActors = actors.ToInt64();
+                return b;
+            }
+            return fallback;
+        }
 
         // In a battle with its menu open (the battle is paused). Holding the target button pauses the battle the same
         // way, but that isn't the menu. Rva.BattleFlags is checked by Features.CoopBattle.

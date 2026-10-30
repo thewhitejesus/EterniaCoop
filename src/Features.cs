@@ -26,8 +26,9 @@ namespace EterniaCoop
         };
 
         static readonly string[] CameraSites = { "CamTargetX", "CamZoom", "CamScroll", "CamScrollNow", "CamMode", "BattleFlags", "CmdBlocks", "ActorArray" };
+        static readonly string[] GroundSites = { "DrawBg", "DrawQuad", "FillRect", "FillY", "ZoomNow", "DrawStateA", "DrawStateB" };
 
-        public static bool Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera;
+        public static bool Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera, Ground;
         static bool checkedOnce;
 
         // Call once GameNative is loaded and before anything is patched.
@@ -46,6 +47,7 @@ namespace EterniaCoop
             Rumble = Core && Verify("Per-player rumble", RumbleSites) &&
                 (!Sites.Resolved("BattleFlags") || Agree("Per-player rumble", "BattleFlags", "HitPaused"));
             Camera = CoopBattle && Verify("Co-op camera", CameraSites);
+            Ground = Camera && Verify("Battle ground extension", GroundSites);
             ApplyAddresses();
             Compatibility.Report(Core, Missing(), Sites.Moved);
         }
@@ -61,13 +63,21 @@ namespace EterniaCoop
             if (Sites.Resolved("CmdBlocks")) Rva.CmdBlocks = Sites.Get("CmdBlocks").Target;
             if (Sites.Resolved("ActorArray")) Rva.ActorArray = Sites.Get("ActorArray").Target;
             if (Sites.Resolved("MenuOpener")) Rva.MenuOpener = Sites.Get("MenuOpener").Target;
-            if (Sites.Resolved("TargetActor")) Rva.TargetActor = Sites.Get("TargetActor").Target;            if (Sites.Resolved("BattleFlags")) Rva.BattleFlags = Sites.Get("BattleFlags").Target;
+            if (Sites.Resolved("TargetActor")) Rva.TargetActor = Sites.Get("TargetActor").Target;
+            if (Sites.Resolved("BattleFlags")) Rva.BattleFlags = Sites.Get("BattleFlags").Target;
             else if (Sites.Resolved("HitPaused")) Rva.BattleFlags = Sites.Get("HitPaused").Target;
             if (Sites.Resolved("GameOptions")) Rva.GameOptions = Sites.Get("GameOptions").Target;
             if (Sites.Resolved("CamZoom")) Rva.CamZoom = Sites.Get("CamZoom").Target;
             if (Sites.Resolved("CamMode")) Rva.CamMode = Sites.Get("CamMode").Target;
             if (Sites.Resolved("CamScroll")) Rva.CamScroll = Sites.Get("CamScroll").Target;
             if (Sites.Resolved("CamScrollNow")) Rva.CamScrollNow = Sites.Get("CamScrollNow").Target;
+            if (Sites.Resolved("ZoomNow")) Rva.ZoomNow = Sites.Get("ZoomNow").Target;
+            if (Sites.Resolved("FillY")) Rva.FillY = Sites.Get("FillY").Target;
+            if (Sites.Resolved("DrawStateA")) Rva.DrawStateA = Sites.Get("DrawStateA").Target;
+            if (Sites.Resolved("DrawStateB")) Rva.DrawStateB = Sites.Get("DrawStateB").Target;
+            if (Sites.Resolved("DrawBg")) Rva.DrawBg = Sites.Rva("DrawBg", 0);
+            if (Sites.Resolved("DrawQuad")) Rva.DrawQuad = Sites.Rva("DrawQuad", 0);
+            if (Sites.Resolved("FillRect")) Rva.FillRect = Sites.Rva("FillRect", 0);
             if (Sites.Resolved("BattleCommands")) Rva.BattleCommands = Sites.Rva("BattleCommands", 0);
             if (Sites.Resolved("BuildPad")) Rva.BuildPad = Sites.Rva("BuildPad", 0);
             if (Sites.Resolved("ApplyHit")) Rva.ApplyHit = Sites.Rva("ApplyHit", 0);
@@ -82,6 +92,7 @@ namespace EterniaCoop
             if (!CoopBattle) off.Add("battle input");
             if (!Rumble) off.Add("rumble");
             if (!Camera) off.Add("camera");
+            if (Camera && !Ground) off.Add("ground extension");
             return off;
         }
 

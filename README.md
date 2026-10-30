@@ -20,8 +20,10 @@ per-character input slots - this mod fills them again.
 - **Control modes stay set after battles** (the game used to reset them to Auto).
 - **Per-player rumble:** each player's controller rumbles for their own character's hits, like the PS1.
 - **Co-op camera:** with two or more players, the battle camera centres between everyone and zooms out smoothly as
-  you spread apart, so nobody fights off-screen. If player 1's character is knocked out it follows the others; spell
-  cameras and the battle menu's manual pan work as usual.
+  you spread apart - all the way out to the whole battlefield - so nobody fights off-screen. The PS1 never zoomed out
+  this far, so the ground ended above the bottom of the screen; the mod continues each stage's own ground there,
+  in perspective and with the stage's own texture. If player 1's character is knocked out it follows the others;
+  spell cameras and the battle menu's manual pan work as usual.
 - **Controller manager** (F1, or hold L3 + R3): choose which controller is which player - fully usable with a
   controller, drawn in Tales of Eternia's own style with the party's artwork from your copy of the game. Any device
   can be turned off (handy for Parsec).
@@ -144,7 +146,7 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `LiveModeSync` | true | Join / drop out mid-battle. |
 | `PerPlayerRumble` | true | Rumble each player's own controller. Follows the game's rumble option. |
 | `CoopCamera` | true | With 2+ players, the battle camera follows everyone and zooms out as they spread apart. Off = the game's camera. |
-| `CoopCameraMaxZoom` | 720 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest). Beyond about 730 the view reaches past the bottom of the battle picture. |
+| `CoopCameraMaxZoom` | 1040 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest, 1040 = the whole battlefield). Past about 730 the mod continues the ground below the original picture; on a stage whose ground it can't continue, the camera stops at 720. |
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |
 | `ShowWatermark` | true | The corner label on the main menu. |
@@ -161,6 +163,12 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
   so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). BepInEx 6 mods (**Uncropped Backgrounds,
   Fast Shutdown, Font Replacer**) work too, through the included BepInEx 6 Bridge - see below.
+- **Water's Edition:** works. Its own battle camera hands over to the co-op camera while two or more play (its
+  Camera setting switches to Co-op on its own). It takes the spot per-player rumble uses, so with it installed only
+  player 1 feels rumble (the game's own). It also replaces `GameNative.dll`, so the corner label says the mod adapted.
+- **Six Person Battle Expansion:** works. Players 1-4 control party slots 1-4; slots 5 and 6 fight on AI.
+  (Six Person Battle itself doesn't run together with Water's Edition: it only runs on the original `GameNative.dll`.)
+- **Analog Stick Fix, PS1 Style Arte Shortcuts, Artes and Character Renamer:** work, for every player.
 - **Saved controller choices can swap** if controllers are plugged in a different order - reopen the manager.
 - **A controller shows up twice?** Turn off Steam Input for the game (Steam → game Properties → Controller).
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.6.0 - 2026-10-29
+- **The co-op camera shows the whole battlefield.** With players at opposite ends of the field, it now zooms out all
+  the way instead of stopping at 720. The PS1 never zoomed out that far, so each stage's ground ended above the bottom
+  of the screen with an empty band below. The mod now continues the stage's own ground down to the bottom of the
+  screen, in the same perspective and with the stage's own texture. A stage whose ground the mod can't continue keeps
+  the old limit, so no band shows. `CoopCameraMaxZoom` now defaults to 1040 (the whole field); a config still on the
+  old default of 720 is updated.
+- **Water's Edition:** its battle camera now hands over to the co-op camera while two or more play, using the
+  hand-off Water's Edition provides (its Camera setting switches to Co-op on its own and back for one player). Before,
+  its camera eased the zoom and scroll over ours, so players could end up off-screen. With Water's Edition installed,
+  per-player rumble stays off (it changes the code that rumble uses); player 1 still has the game's rumble.
+- **Six Person Battle Expansion:** co-op works with it. It moves the battle's command blocks into its own memory,
+  and the mod now finds them wherever they are, so players 2-4 control their characters and the camera frames them
+  again. Players 1-4 control party slots 1-4; slots 5 and 6 fight on AI.
+
 ## 1.5.2 - 2026-10-29
 - **Control modes stay as chosen.** When a player's controller reconnected (a wireless controller waking up, a
   Parsec hiccup) or the party changed, the mod set that slot back to Semi-Auto - so a Manual choice (where the game

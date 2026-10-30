@@ -11,7 +11,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.5.2";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.6.0";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -24,6 +24,7 @@ namespace EterniaCoop
             Settings.Bind(Config);
 #if COOP_DEBUG
             ResearchTools.Bind(Config);
+            RosterUnlock.Bind(Config);
 #endif
             Compatibility.Check(Settings.StrictVersionCheck.Value);
             Players.LoadManual(Settings.DeviceAssignments.Value);
@@ -37,6 +38,7 @@ namespace EterniaCoop
         void Update()
         {
             RumbleRouter.Update(Settings.RumbleSeconds.Value);
+            if (CoopActive) WaterCompat.Update(CoopCamera.HumanPlayers >= 2);
             if (CoopActive && Players.InputManager != null && Settings.AutoAssignControllers.Value) ControllerManager.Update();
             // Battle menu opened or closed: hand every device to player 1 (or back) right away, not on the next tick.
             bool share = CoopActive && Settings.AutoAssignControllers.Value && Battle.MenuOpen();
@@ -62,6 +64,7 @@ namespace EterniaCoop
             }
 #if COOP_DEBUG
             ResearchTools.Update(Config);
+            RosterUnlock.Update();
 #endif
         }
 
