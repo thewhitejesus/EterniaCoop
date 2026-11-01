@@ -87,20 +87,25 @@ namespace EterniaCoop
         public static int[] PlayerOf(List<InputDevice> devices, int keyboardPlayer)
         {
             var result = new int[devices.Count];
+            // Players already spoken for by a saved choice or the keyboard: automatic controllers go around them, so a
+            // new controller never ends up sharing a player. (The keyboard on player 1 is the exception: it shares with
+            // player 1's controller by default.)
+            var taken = new bool[4];
+            int chosen;
+            foreach (var d in devices)
+            {
+                int who = manual.TryGetValue(d.path, out chosen) ? chosen : d is Keyboard ? keyboardPlayer : Off;
+                if (who > 0 || (who == 0 && !(d is Keyboard))) taken[who] = true;
+            }
             int nextAuto = 0;
             for (int i = 0; i < devices.Count; i++)
             {
                 var d = devices[i];
-                int auto;
-                if (d is Keyboard) auto = keyboardPlayer < 0 ? Off : keyboardPlayer;
-                else
-                {
-                    if (nextAuto == keyboardPlayer && keyboardPlayer != 0) nextAuto++;
-                    auto = nextAuto < 4 ? nextAuto : -1;
-                    nextAuto++;
-                }
-                int chosen;
-                result[i] = manual.TryGetValue(d.path, out chosen) ? chosen : auto;
+                if (manual.TryGetValue(d.path, out chosen)) { result[i] = chosen; continue; }
+                if (d is Keyboard) { result[i] = keyboardPlayer < 0 ? Off : keyboardPlayer; continue; }
+                while (nextAuto < 4 && taken[nextAuto]) nextAuto++;
+                result[i] = nextAuto < 4 ? nextAuto : Off;
+                nextAuto++;
             }
             return result;
         }

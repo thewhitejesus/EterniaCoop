@@ -11,7 +11,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.6.0";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.6.1";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -25,6 +25,7 @@ namespace EterniaCoop
 #if COOP_DEBUG
             ResearchTools.Bind(Config);
             RosterUnlock.Bind(Config);
+            BotPlayers.Bind(Config);
 #endif
             Compatibility.Check(Settings.StrictVersionCheck.Value);
             Players.LoadManual(Settings.DeviceAssignments.Value);
@@ -65,6 +66,7 @@ namespace EterniaCoop
 #if COOP_DEBUG
             ResearchTools.Update(Config);
             RosterUnlock.Update();
+            BotPlayers.Update();
 #endif
         }
 
@@ -105,10 +107,35 @@ namespace EterniaCoop
             bool underDropSteal = ControllerManager.KeyTakenBy() != null;
             watermarkStyle.alignment = underDropSteal ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
             float x = underDropSteal ? Screen.width - 520 : Screen.width - 1010, w = underDropSteal ? 510 : 1000;
+
+            var unbridged = OtherMods.UnbridgedBepInEx6();
+            if (unbridged.Count > 0)
+            {
+                AddWrapped(extra, "Not loaded (BepInEx 6 mods): " + string.Join(", ", unbridged.ToArray()), w, "#FFCC44");
+                AddWrapped(extra, "Install the BepInEx 6 Bridge to load them: it comes with Eternia Co-op, or get it from " +
+                    "its Nexus page (optional files).", w, "#FFCC44");
+            }
             float y = underDropSteal ? 28 : 10;
             GUI.color = Color.white;
             GUI.Label(new Rect(x, y, w, 25), text, watermarkStyle);
             for (int i = 0; i < extra.Count; i++) GUI.Label(new Rect(x, y + 18 * (i + 1), w, 25), extra[i], watermarkStyle);
+        }
+
+        // Adds text as label lines no wider than width (word wrap), each in the given colour.
+        void AddWrapped(List<string> lines, string text, float width, string color)
+        {
+            string line = "";
+            foreach (string word in text.Split(' '))
+            {
+                string next = line.Length == 0 ? word : line + " " + word;
+                if (line.Length > 0 && watermarkStyle.CalcSize(new GUIContent(next)).x > width)
+                {
+                    lines.Add("<color=" + color + ">" + line + "</color>");
+                    next = word;
+                }
+                line = next;
+            }
+            if (line.Length > 0) lines.Add("<color=" + color + ">" + line + "</color>");
         }
     }
 }

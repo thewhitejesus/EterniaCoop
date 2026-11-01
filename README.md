@@ -19,8 +19,8 @@ per-character input slots - this mod fills them again.
 - **Semi-Auto / Auto tab for every party member** in the Skills menu (the game normally shows it only for the leader).
 - **Control modes stay set after battles** (the game used to reset them to Auto).
 - **Per-player rumble:** each player's controller rumbles for their own character's hits, like the PS1.
-- **Co-op camera:** with two or more players, the battle camera centres between everyone and zooms out smoothly as
-  you spread apart - all the way out to the whole battlefield - so nobody fights off-screen. The PS1 never zoomed out
+- **Co-op camera:** with two or more players, the battle camera centres on the whole party (AI characters too) and
+  zooms out smoothly as you spread apart - all the way out to the whole battlefield - so nobody fights off-screen. The PS1 never zoomed out
   this far, so the ground ended above the bottom of the screen; the mod continues each stage's own ground there,
   in perspective and with the stage's own texture. If player 1's character is knocked out it follows the others;
   spell cameras and the battle menu's manual pan work as usual.
@@ -146,6 +146,7 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `LiveModeSync` | true | Join / drop out mid-battle. |
 | `PerPlayerRumble` | true | Rumble each player's own controller. Follows the game's rumble option. |
 | `CoopCamera` | true | With 2+ players, the battle camera follows everyone and zooms out as they spread apart. Off = the game's camera. |
+| `CoopCameraFrameParty` | true | Keep the whole party in view, AI-controlled characters too. Off = only the human players' characters. |
 | `CoopCameraMaxZoom` | 1040 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest, 1040 = the whole battlefield). Past about 730 the mod continues the ground below the original picture; on a stage whose ground it can't continue, the camera stops at 720. |
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |
@@ -169,6 +170,9 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 - **Six Person Battle Expansion:** works. Players 1-4 control party slots 1-4; slots 5 and 6 fight on AI.
   (Six Person Battle itself doesn't run together with Water's Edition: it only runs on the original `GameNative.dll`.)
 - **Analog Stick Fix, PS1 Style Arte Shortcuts, Artes and Character Renamer:** work, for every player.
+- **A yellow "Not loaded (BepInEx 6 mods)" line on the title screen?** Those mods are made for BepInEx 6, which this
+  mod's BepInEx 5 can only run through the BepInEx 6 Bridge. It comes with Eternia Co-op (`BepInEx\plugins\BepInEx6Bridge`)
+  and is also an optional file on the Nexus page; put it back and they load.
 - **Saved controller choices can swap** if controllers are plugged in a different order - reopen the manager.
 - **A controller shows up twice?** Turn off Steam Input for the game (Steam → game Properties → Controller).
 

@@ -142,7 +142,13 @@ namespace EterniaCoop
             try { original(); }
             finally { Marshal.WriteByte(rec, 0); }
             try { failed = !Extend(); }
-            catch (Exception e) { failed = true; Plugin.Log.LogError("Battle ground extension: " + e.Message); }
+            catch (Exception e) { failed = true; why = e.Message; }
+            if (failed && why != lastWhy && logged < 20)
+            {
+                logged++;
+                lastWhy = why;
+                Plugin.Log.LogWarning("Battle ground extension: can't continue this stage's ground (" + why + "); the co-op camera stops at zoom 720 here.");
+            }
         }
 
         static IntPtr Quad(int i) { return new IntPtr(buf.ToInt64() + i * PrimSize); }
@@ -274,11 +280,16 @@ namespace EterniaCoop
             return true;
         }
 
+        static string why, lastWhy;
+        static int logged;
+
+        static bool Fail(string reason) { why = reason; return false; }
+
         // False when this frame's ground can't be continued (no regular grid); true when drawn or not needed.
         static bool Extend()
         {
             int n = quads = Math.Min(Marshal.ReadInt32(count), MaxQuads);
-            if (n == 0) return false;
+            if (n == 0) return Fail("no quads drawn");
             for (int i = 0; i < n; i++) Marshal.Copy(new IntPtr(Quad(i).ToInt64() + P0), corners, i * 8, 8);
 
             // Start from the lowest ground quad drawn.
@@ -288,7 +299,7 @@ namespace EterniaCoop
                 Read(i, q);
                 if (IsGround(q) && Bottom(q) > lowest) { lowest = Bottom(q); start = i; }
             }
-            if (start < 0) return false;
+            if (start < 0) return Fail(n + " quads, none of them ground");
             if (lowest >= TargetBottom) return true;   // the ground already reaches the bottom
 
             int found = BuildGrid(start);
@@ -300,14 +311,14 @@ namespace EterniaCoop
                     if (grow[i] > maxRow) maxRow = grow[i];
                     if (grow[i] < minRow) minRow = grow[i];
                 }
-            if (found < 4 || maxRow - minRow < 1) return false;   // need at least two rows to know the perspective
+            if (found < 4 || maxRow - minRow < 1) return Fail("grid of " + found + " quads, " + (maxRow - minRow + 1) + " rows");   // need at least two rows to know the perspective
 
             double error;
-            if (!FitGrid(inGrid, out error) || error > 2.5) return false;   // not a regular grid: leave it alone
+            if (!FitGrid(inGrid, out error) || error > 2.5) return Fail("grid of " + found + " quads doesn't fit a plane");   // not a regular grid: leave it alone
 
             int b0 = int.MaxValue, b1 = int.MinValue;
             for (int c = 0; c < GridSize; c++) if (cell[c, maxRow] >= 0) { b0 = Math.Min(b0, c); b1 = Math.Max(b1, c); }
-            if (b0 > b1) return false;
+            if (b0 > b1) return Fail("no bottom row");
             bottomRow = maxRow;
 
             // Draw with the state the stage's own ground was drawn with, then put the current one back.

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.1 - 2026-11-01
+- **The co-op camera keeps the whole party in view,** AI-controlled characters too, not only the human players'. With
+  three people and a four-character party, the fourth character could fight off screen. Setting `CoopCameraFrameParty`
+  (off: human players only). Thanks to TenshioftheRain for the report.
+- **New controllers no longer share a player with a saved choice.** The automatic order ignored players taken in the
+  controller manager, so a controller plugged in later could land on the keyboard's player.
+- **BepInEx 6 mods without the bridge:** if BepInEx 6 mods are in `BepInEx\plugins` but the BepInEx 6 Bridge isn't
+  installed, nothing loads them. The title screen now says which ones and how to get the bridge (also in the log).
+- The log now says when, and why, the battle ground extension can't continue a stage's ground (the camera then stops at
+  zoom 720 there).
+
 ## 1.6.0 - 2026-10-29
 - **The co-op camera shows the whole battlefield.** With players at opposite ends of the field, it now zooms out all
   the way instead of stopping at 720. The PS1 never zoomed out that far, so each stage's ground ended above the bottom

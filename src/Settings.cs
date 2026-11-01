@@ -7,7 +7,7 @@ namespace EterniaCoop
     {
         // [Coop]
         public static ConfigEntry<int> PlayerCount, KeyboardPlayer, JoinMode, FieldControl;
-        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera;
+        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera, CoopCameraFrameParty;
         public static ConfigEntry<int> CoopCameraMaxZoom;
         public static ConfigEntry<float> RumbleSeconds;
         public static ConfigEntry<string> DeviceAssignments, ManagerKey, ManagerControllerShortcut;
@@ -48,6 +48,8 @@ namespace EterniaCoop
             CoopCamera = c.Bind("Coop", "CoopCamera", true,
                 "With two or more human players in battle, centre the camera between them and zoom out as they spread " +
                 "apart (back in as they come together). Off: the game's camera, which follows one character.");
+            CoopCameraFrameParty = c.Bind("Coop", "CoopCameraFrameParty", true,
+                "Keep the whole party in view, AI-controlled characters too. Off: only the human players' characters.");
             CoopCameraMaxZoom = c.Bind("Coop", "CoopCameraMaxZoom", 1040,
                 "How far the co-op camera may zoom out: 512 (no zoom), 668 (the game's own farthest, same as zooming out by " +
                 "hand), 1040 (default: the whole battlefield). Past about 730 the view reaches below the battle picture; the mod " +

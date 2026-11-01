@@ -1,4 +1,4 @@
-// Co-op camera: in battles with two or more human players, the battle camera centres between their characters and
+// Co-op camera: in battles with two or more human players, the battle camera centres between the party's characters and
 // zooms out as they spread apart (back in as they come together), easing smoothly - so nobody fights off-screen.
 //
 // The game's normal battle camera (FUN_D2C80) loads the followed actor's x (Sites "CamTargetX": movzx ecx, word
@@ -144,22 +144,29 @@ namespace EterniaCoop
             }
 
             GuardSnap();
+#if COOP_DEBUG
+            CameraDiag.Frame(actors, Marshal.ReadByte(active) != 0);
+#endif
 
             bool enabled = Settings.CoopCamera.Value && Marshal.ReadByte(Native.At(Rva.CamMode)) == 0 &&
                 (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0;
-            // Frame the human players' characters that are still standing (Battle.PartySlot skips knocked-out ones), as
-            // long as two or more people are playing: if player 1's character is down, follow the others.
+            // Frame every party character still standing (kind 1), AI-controlled ones too, or with CoopCameraFrameParty off
+            // only the human players' - as long as two or more people are playing. If player 1's character is down,
+            // follow the others.
             int players = 0;
             for (int p = 0; p < 4; p++) if (humanSlots[p]) players++;
             HumanPlayers = players;
+            bool frameParty = Settings.CoopCameraFrameParty.Value;
             int min = int.MaxValue, max = int.MinValue, humans = 0, leaderX = 0;
             bool leaderUp = false;
             if (enabled && players >= 2)
                 for (int i = 0; i < Rva.ActorCount; i++)
                 {
                     IntPtr a = Battle.ActorAt(actors, i);
-                    int slot = Battle.PartySlot(a);
-                    if (slot < 0 || !humanSlots[slot]) continue;
+                    if (Marshal.ReadInt16(a, Actor.Kind) != 1 || Marshal.ReadByte(a, Actor.Side) != 0 ||
+                        Marshal.ReadIntPtr(a, Actor.CmdBlock) == IntPtr.Zero) continue;
+                    int slot = Battle.PartySlot(a);   // -1: a slot past the fourth (Six Person Battle Expansion), on AI
+                    if (!frameParty && (slot < 0 || !humanSlots[slot])) continue;
                     int ax = Marshal.ReadInt16(a, Actor.X);
                     if (ax < min) min = ax;
                     if (ax > max) max = ax;
