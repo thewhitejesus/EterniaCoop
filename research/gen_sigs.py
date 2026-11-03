@@ -31,63 +31,63 @@ SITES = [
     ("StickCmp2",    "Core", 0x18B97, "code"),
     ("StickMovEdx",  "Core", 0x18B9D, "code"),
     ("StickMovEax",  "Core", 0x18BAD, "code"),
-    ("LatchGuard",   "Core", 0x57AAE, "code"),      # FUN_57AA0 per-player guard (spinning-camera fix)
-    ("RemapGuard",   "Core", 0x57F2F, "code"),      # FUN_57F20
-    ("InputObject",  "Core", 0x5D2FB, "data", 0x6449F8, 0),
-    ("PartyIds",     "Core", 0x84BE3, "data", 0x11CAD10, 0),
-    ("SlotModes",    "Core", 0x84BD9, "data", 0x11CAD38, 0),
-    ("Area",         "Core", 0x84BA4, "data", 0x11CAFC4, 0),
+    ("LatchGuard",   "Core", 0x5824E, "code"),      # FUN_57AA0 per-player guard (spinning-camera fix)
+    ("RemapGuard",   "Core", 0x586CF, "code"),      # FUN_57F20
+    ("InputObject",  "Core", 0x5DA9B, "data", 0x6459B8, 0),
+    ("PartyIds",     "Core", 0x853C3, "data", 0x11CBCD0, 0),
+    ("SlotModes",    "Core", 0x853B9, "data", 0x11CBCF8, 0),
+    ("Area",         "Core", 0x85384, "data", 0x11CBF84, 0),
     # KeepModes: battle results reset slots 2-4 to Auto
     # three copies of the same code, told apart by the slot they write: constrained to SlotModes + 1/2/3
-    ("ResetSlot2",   "KeepModes", 0x84C91, "data", 0x11CAD39, 0, "SlotModes", 1),
-    ("ResetSlot3",   "KeepModes", 0x84D31, "data", 0x11CAD3A, 0, "SlotModes", 2),
-    ("ResetSlot4",   "KeepModes", 0x84DD1, "data", 0x11CAD3B, 0, "SlotModes", 3),
+    ("ResetSlot2",   "KeepModes", 0x85471, "data", 0x11CBCF9, 0, "SlotModes", 1),
+    ("ResetSlot3",   "KeepModes", 0x85511, "data", 0x11CBCFA, 0, "SlotModes", 2),
+    ("ResetSlot4",   "KeepModes", 0x855B1, "data", 0x11CBCFB, 0, "SlotModes", 3),
     # MenuTab: Skills menu "leader only" gates
     # five identical inlined copies of one gate; the signature must match exactly these five (all get patched)
-    ("TabJe",        "MenuTab", [0x22963D, 0x229822, 0x229E96, 0x22A0D1, 0x22B30E], "code"),
-    ("TabCursor1",   "MenuTab", 0x2292F2, "code"),
-    ("TabCursor2",   "MenuTab", 0x22B5EF, "code"),
-    ("TabConfirm",   "MenuTab", 0x229161, "code"),
-    ("TabDraw",      "MenuTab", 0x224B6A, "code"),
+    ("TabJe",        "MenuTab", [0x229EDD, 0x22A0C2, 0x22A736, 0x22A971, 0x22BBAE], "code"),
+    ("TabCursor1",   "MenuTab", 0x229B92, "code"),
+    ("TabCursor2",   "MenuTab", 0x22BE8F, "code"),
+    ("TabConfirm",   "MenuTab", 0x229A01, "code"),
+    ("TabDraw",      "MenuTab", 0x22540A, "code"),
     # CoopBattle
-    ("BattleCommands", "CoopBattle", 0x1121E0, "func"),
-    ("BuildPad",       "CoopBattle", 0x19DBC0, "func"),
-    ("Pad",            "CoopBattle", 0xD2DAD, "data", 0x8C9180, 0),
-    ("PadHeld",        "CoopBattle", 0x1121EF, "data", 0x8C9184, 4),   # in FUN_1121E0; also gives Pad
-    ("BattleFlags",    "CoopBattle", 0xD2EE3, "data", 0x12CEB7A, 0),
-    ("MenuOpener",     "CoopBattle", 0x110130, "data", 0x12CEB8C, 0),
+    # ("BattleCommands", "CoopBattle", 0x1121E0, "func"),   # found as the function containing CmdBlocks (its prologue changed in 2.1.0)
+    ("BuildPad",       "CoopBattle", 0x19E3F0, "func"),
+    ("Pad",            "CoopBattle", 0xD358D, "data", 0x8CA140, 0),
+    ("PadHeld",        "CoopBattle", 0x1129D5, "data", 0x8CA144, 4),   # in FUN_1121E0; also gives Pad
+    ("BattleFlags",    "CoopBattle", 0xD36C3, "data", 0x12CFB3A, 0),
+    ("MenuOpener",     "CoopBattle", 0x110910, "data", 0x12CFB4C, 0),
     # Target selection: a fresh target-button press (+4 bit 0x200) in a party actor's block makes it the targeting
     # actor (index + 1, here); while it holds the button the battle pauses and FUN_113EA0 switches its target.
-    ("TargetActor",    "CoopBattle", 0xD4231, "data", 0x12CEB8D, 0),
-    ("TargetSwitchCall", "CoopBattle", 0xD448D, "code"),   # call FUN_113EA0 (target switching) for the targeting actor
-    ("CmdBlocks",      "CoopBattle", 0x112204, "data", 0x12CEBA0, 0),
-    ("ActorArray",     "CoopBattle", 0xD3090, "data", 0x12CECD8, 0),
+    ("TargetActor",    "CoopBattle", 0xD4A11, "data", 0x12CFB4D, 0),
+    ("TargetSwitchCall", "CoopBattle", 0xD4C6D, "code"),   # call FUN_113EA0 (target switching) for the targeting actor
+    ("CmdBlocks",      "CoopBattle", 0x1129EA, "data", 0x12CFB60, 0),
+    ("ActorArray",     "CoopBattle", 0xD3870, "data", 0x12CFC98, 0),
     # Camera (co-op camera): the battle camera's normal path loads the followed actor's x here, then calls the
     # scroll function (FUN_D6420); the zoom setting is copied to the zoom target right after. 0x12CEB7F = camera mode
     # (0 normal, >= 2 scripted: spells, mystic artes).
-    ("CamTargetX",     "Camera", 0xD3BA3, "code"),
-    ("CamZoom",        "Camera", 0xD3BBA, "data", 0x12CEB78, 0),
-    ("CamScroll",      "Camera", 0xD3BAD, "data", 0x12CEAB8, 0),     # scroll = -(centre x >> 4), stored after FUN_D6420
-    ("CamMode",        "Camera", 0xD3B28, "data", 0x12CEB7F, 0),
-    ("CamScrollNow",   "Camera", 0xD70BB, "data", 0x12CEA98, 0),     # the scroll shown now (eases toward CamScroll); set in FUN_D6480
+    ("CamTargetX",     "Camera", 0xD4383, "code"),
+    ("CamZoom",        "Camera", 0xD439A, "data", 0x12CFB38, 0),
+    ("CamScroll",      "Camera", 0xD438D, "data", 0x12CFA78, 0),     # scroll = -(centre x >> 4), stored after FUN_D6420
+    ("CamMode",        "Camera", 0xD4308, "data", 0x12CFB3F, 0),
+    ("CamScrollNow",   "Camera", 0xD789B, "data", 0x12CFA58, 0),     # the scroll shown now (eases toward CamScroll); set in FUN_D6480
     # Ground: the battle ground extension (BattleGround.cs). FUN_10D500 dispatches the stage's background routine,
     # FUN_11E6F0 draws a textured quad, FUN_120F70 a solid rectangle (y read from the work struct, 0x11CE662);
     # 0x594300 / 0x865A10 = global draw state (texture binding); 0x12CEA9C = the zoom shown now.
-    ("DrawBg",         "Ground", 0x10D500, "func"),
-    ("DrawQuad",       "Ground", 0x11E6F0, "func"),
-    ("FillRect",       "Ground", 0x120F70, "func"),
-    ("FillY",          "Ground", 0xDA519, "data", 0x11CE662, 0),
-    ("ZoomNow",        "Ground", 0xD7051, "data", 0x12CEA9C, 0),
-    ("DrawStateA",     "Ground", 0x11DBEF, "data", 0x594300, 0),
-    ("DrawStateB",     "Ground", 0x11D925, "data", 0x865A10, 0),
+    ("DrawBg",         "Ground", 0x10DCE0, "func"),
+    ("DrawQuad",       "Ground", 0x11EF30, "func"),
+    ("FillRect",       "Ground", 0x1217B0, "func"),
+    ("FillY",          "Ground", 0xDACF9, "data", 0x11CF622, 0),
+    ("ZoomNow",        "Ground", 0xD7831, "data", 0x12CFA5C, 0),
+    ("DrawStateA",     "Ground", 0x11E42F, "data", 0x5952D0, 0),
+    ("DrawStateB",     "Ground", 0x11E165, "data", 0x8669D0, 0),
     # Rumble
-    ("ApplyHit",       "Rumble", 0x8E320, "func"),
-    ("HitPaused",      "Rumble", 0x8E32A, "data", 0x12CEB7A, 0),
-    ("RumbleAtkBlock", "Rumble", 0x8E895, "code"),
-    ("RumbleAtkSide",  "Rumble", 0x8E89B, "code"),
-    ("GameOptions",    "Rumble", 0x8E8A1, "data", 0x6449E0, 0),
-    ("RumbleStrength", "Rumble", 0x8E8A8, "data", 0x862E78, 0),
-    ("RumbleOption",   "Rumble", 0x8E8B2, "code"),
+    ("ApplyHit",       "Rumble", 0x8EB00, "func"),
+    ("HitPaused",      "Rumble", 0x8EB0A, "data", 0x12CFB3A, 0),
+    ("RumbleAtkBlock", "Rumble", 0x8F075, "code"),
+    ("RumbleAtkSide",  "Rumble", 0x8F07B, "code"),
+    ("GameOptions",    "Rumble", 0x8F081, "data", 0x6459A0, 0),
+    ("RumbleStrength", "Rumble", 0x8F088, "data", 0x863E38, 0),
+    ("RumbleOption",   "Rumble", 0x8F092, "code"),
 ]
 
 MAX_LEN = 96
@@ -117,13 +117,29 @@ def rip_disp_offset(ins):
     return None
 
 
+IMAGE_SIZE = gn.pe.OPTIONAL_HEADER.SizeOfImage
+GLOBAL_MIN = 0x100000   # a register-relative displacement this large is a global's offset in the module, not a field
+
+
+def module_disp_offset(ins):
+    """Offset of a 4-byte displacement that is an offset into the module (e.g. [r13 + 0x11cad38] with r13 = the
+    module base, [rcx + rsi + 0x12ceba4]), or None. Globals move between builds, so these change like RIP-relative
+    displacements do."""
+    for op in ins.operands:
+        if op.type == X86_OP_MEM and op.mem.base != X86_REG_RIP and GLOBAL_MIN <= op.mem.disp < IMAGE_SIZE:
+            raw = (op.mem.disp & 0xFFFFFFFF).to_bytes(4, "little")
+            k = bytes(ins.bytes).find(raw)
+            if k > 0: return k
+    return None
+
+
 def masked(ins):
-    """Instruction bytes with moving parts wildcarded (None): RIP-relative displacements and the targets of
-    relative jumps and calls."""
+    """Instruction bytes with moving parts wildcarded (None): RIP-relative displacements, displacements that are
+    offsets into the module, and the targets of relative jumps and calls."""
     b = [x for x in ins.bytes]
-    k = rip_disp_offset(ins)
-    if k is not None:
-        for j in range(k, k + 4): b[j] = None
+    for k in (rip_disp_offset(ins), module_disp_offset(ins)):
+        if k is not None:
+            for j in range(k, k + 4): b[j] = None
     if (ins.group(1) or ins.group(2) or ins.group(7)) and any(op.type == X86_OP_IMM for op in ins.operands):
         size = 1 if len(ins.bytes) == 2 else 4   # jcc/jmp rel8 or rel32 (call/jmp/jcc)
         for j in range(len(b) - size, len(b)): b[j] = None

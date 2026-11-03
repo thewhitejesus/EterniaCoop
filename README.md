@@ -160,10 +160,13 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
   picks). Co-op is for battles.
   Any player can open the **battle menu** (Start, or Tab on the keyboard): while it's open only the player who opened
   it controls it (everyone, if the battle was paused with Start).
+- **Game version:** made for 2.1.0 (the 2 November 2026 patch); also runs on 2.0.0.
 - **Other mods:** tested together with 100% Drop and Steal Rate (works; the manager moves to F8) and Guests from
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
   so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). BepInEx 6 mods (**Uncropped Backgrounds,
   Fast Shutdown, Font Replacer**) work too, through the included BepInEx 6 Bridge - see below.
+- **100% Drop & Steal Rate 1.0.0** crashes battles on game version 2.1.0 (it patches fixed 2.0.0 addresses), with or
+  without this mod. Remove it until it's updated; the title screen warns while it's loaded.
 - **Water's Edition:** works. Its own battle camera hands over to the co-op camera while two or more play (its
   Camera setting switches to Co-op on its own). It takes the spot per-player rumble uses, so with it installed only
   player 1 feels rumble (the game's own). It also replaces `GameNative.dll`, so the corner label says the mod adapted.

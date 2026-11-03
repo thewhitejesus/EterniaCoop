@@ -10,7 +10,8 @@ namespace EterniaCoop
 {
     static class RosterUnlock
     {
-        const int PartyList = 0x11CAD10, Slots = 6, Playable = 6;
+        const int Slots = 6, Playable = 6;
+        static int PartyList { get { return Rva.PartyIds; } }
         static ConfigEntry<bool> unlock;
 
         public static void Bind(ConfigFile c)

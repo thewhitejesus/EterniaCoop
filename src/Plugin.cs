@@ -11,7 +11,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.6.1";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.6.2";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -108,6 +108,8 @@ namespace EterniaCoop
             watermarkStyle.alignment = underDropSteal ? TextAnchor.UpperLeft : TextAnchor.UpperRight;
             float x = underDropSteal ? Screen.width - 520 : Screen.width - 1010, w = underDropSteal ? 510 : 1000;
 
+            string dropSteal = OtherMods.DropStealWarning();
+            if (dropSteal != null) AddWrapped(extra, dropSteal, w, "#FF6644");
             var unbridged = OtherMods.UnbridgedBepInEx6();
             if (unbridged.Count > 0)
             {

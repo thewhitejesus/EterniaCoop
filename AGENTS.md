@@ -62,7 +62,7 @@ deliberately left locked.
 | Device assignment | `Players.cs` | Once a second: `SetInputDevices` on each `UgxInputPlayer` (keyboard+mouse to `KeyboardPlayer`, controllers in deviceId order). Automatic controllers go around players taken by saved choices or the keyboard (`PlayerOf`). Players without a device get zeroed input (`InputPatches.cs`) - otherwise an empty device list listens to every device and mirrors player 1. |
 | Slot modes follow controllers | `SlotModes.cs` | Writes `JoinMode`/0 to `0x11CAD38+slot` when a player gains/loses a device or the party changes (save load). A human slot already on Semi-Auto/Manual is never overwritten; a slot set to Auto because its controller dropped remembers its mode and gets it back on reconnect (forgotten when the slot's character changes). Manual (2) is offered by the game's Skills tab only when the global flag `0x11CAE9A` is set (max choice = flag + 1); the mod doesn't change that. |
 | Per-player rumble | `RumbleRouter.cs` | Detour on `FUN_8E320(type, flags, hit, attacker, victim)`. At its end the game requests rumble (strength 0.6, 6 frames, played on player 1) only when the option `[0x6449E0]+0x21` is on and the attacker - else the victim - is the party actor in command block 0 (`+0x56 == 0`): players 2-4's characters never rumble. The hook leaves that alone and applies the same rule to blocks 1-3 (skipped while paused, like the game): `UgxInputManager.SetVibration(0.6, player)` / `StopVibration`, queued for `Update`. |
-| Compatibility check | `Compatibility.cs`, `Sites.cs`, `Features.cs` | SHA-256 of `GameNative.dll` vs `KnownSha256` decides the label (and, with `StrictVersionCheck`, whether to stay off). The gate is `Features.Check`, run in the `Initialize` prefix before anything is patched: `Sites.Resolve` finds every site by signature (known address, else cache, else search; on the known build a site whose neighbours another mod hooked is accepted if its own instruction matches), `Rva` takes the found addresses, and each feature (Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera) is on only if all its sites resolved (plus cross-checks: Pad/PadHeld, BattleFlags/HitPaused). Everything needs Core. Patches re-check their instruction bytes. |
+| Compatibility check | `Compatibility.cs`, `Sites.cs`, `Features.cs` | SHA-256 of `GameNative.dll` vs `KnownSha256` decides the label (and, with `StrictVersionCheck`, whether to stay off). The gate is `Features.Check`, run in the `Initialize` prefix before anything is patched: `Sites.Resolve` finds every site by signature (known address, else cache, else search; on the known build a site whose neighbours another mod hooked is accepted if its own instruction matches), `Rva` takes the found addresses, and each feature (Core, KeepModes, MenuTab, CoopBattle, Rumble, Camera, Ground) is on only if all its sites resolved (plus cross-checks: Pad/PadHeld, BattleFlags/HitPaused). Everything needs Core. Patches re-check their instruction bytes. |
 | Water's Edition camera hand-off | `WaterCompat.cs` | Water's Edition (an on-disk GameNative.dll patch) eases and writes the battle scroll/zoom from its hook in `FUN_10D500` (`0x10D515`), over ours. It publishes a block tagged `WATERCOOPCAM-v1` (found by tag in a data section): version 1, RVA of its Camera setting (0 Vanilla, 1 Water, 2 Co-op), RVA of a "co-op active" byte. Its camera stands down while the setting is Co-op and the byte is 1. We set the byte while the co-op camera is enabled and switch Water → Co-op in battles with 2+ players (back when fewer play). Its hook on `FUN_8E320`'s entry turns our per-player rumble off (site not found). |
 | Watermark | `Plugin.cs` | IMGUI label, top-right, main menu only: hidden while the area id at `0x11CAFC4` is non-zero (it is 0 on the title screen; the party list is *not* empty there - it holds Reid). |
 
@@ -108,7 +108,12 @@ The build uses the .NET Framework `csc.exe` that ships with Windows, so the code
 `nameof`, expression-bodied members or auto-property initializers. References: the game's `Managed\` DLLs plus
 `BepInEx\core` (BepInEx, 0Harmony, MonoMod.RuntimeDetour, MonoMod.Utils).
 
-## Address reference (GameNative.dll, SHA-256 6488BE2C...849B)
+## Address reference (game 2.0.0, GameNative.dll SHA-256 6488BE2C...849B)
+
+The supported build is now 2.1.0 (`ADECC03B...94D8`, the 2 Nov 2026 patch): most of these moved (code by about
++0x7A0..0x8A0, globals by about +0xFC0) - `Rva` and `research/gen_sigs.py` have the 2.1.0 addresses. 2.1.0 added the
+Special Skill Shortcut buttons: the command builder now starts at `0x1129C0` (new prologue) and the Auto handler
+(`0x722F0`) also reads the command block. Actor size, pad size and the per-player input strides didn't change.
 
 | RVA | Meaning |
 |---|---|
@@ -157,6 +162,13 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
 - **Adding a patch, hook or data address? Add a site to `SITES` in `research/gen_sigs.py`** (for an address, any
   instruction that reaches it RIP-relative - `gn.py refs`), regenerate, and list it in its feature in `Features.cs`.
   Never hardcode an RVA in code: take it from `Sites` / `Rva`, or it won't follow a game update.
+- **Game patches move globals referenced through a base register too** (`[r13 + 0x11cad38]` with r13 = module base,
+  `[rcx + rsi + 0x12ceba4]`). `gen_sigs.py` wildcards displacements that are module offsets (`module_disp_offset`),
+  not only RIP-relative ones - 2.1.0 broke TargetActor and TabConfirm that way. A function whose prologue changes
+  (the command builder in 2.1.0) is better found through a site inside it: `Native.FunctionStart` walks `.pdata`.
+- **When a battle crashes, read the crash dump before blaming the mod** (`%TEMP%BANDAI NAMCO Entertainment...Crashes`,
+  exception + CONTEXT streams), then compare the code in memory with the file: on 2.1.0 the crash was 100% Drop &
+  Steal's NOPs at 2.0.0's `0x72382`, inside the Auto handler.
 - **Signatures stay out of a function's first 16 bytes** (`HOOK_ZONE`): other mods hook functions there (something
   hooks `FUN_110120`), and a signature covering a hook stops matching.
 - **PowerShell `Set-Content` writes a BOM; BepInEx config tolerates it, other tools might not.**

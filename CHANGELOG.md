@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.6.2 - 2026-11-03
+- **Works with game version 2.1.0** (the 2 November patch). The patch added the Special Skill Shortcut buttons and
+  changed the battle command builder, so the mod couldn't find it and turned co-op battle input (and with it the
+  camera) and the Skills menu tab off. 2.1.0 is now the supported version, and the mod still finds its code on 2.0.0.
+  Thanks to Jenon08, dindinpark and AnnaLulu for the reports.
+- **Crashing in battle on 2.1.0 with 100% Drop & Steal Rate installed?** That mod (1.0.0) patches fixed addresses
+  from game version 2.0.0; on 2.1.0 one of its patches breaks the Auto characters' AI, and the first battle crashes,
+  with or without Eternia Co-op. The title screen now warns when it's loaded on another game version. Remove it until
+  it's updated.
+- Finding game code after an update is sturdier: addresses inside instructions (`[r13 + offset]`) no longer break a
+  signature, and the battle command builder is found as the function holding its command data.
+
 ## 1.6.1 - 2026-11-01
 - **The co-op camera keeps the whole party in view,** AI-controlled characters too, not only the human players'. With
   three people and a four-character party, the fourth character could fight off screen. Setting `CoopCameraFrameParty`

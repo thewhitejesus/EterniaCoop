@@ -13,53 +13,53 @@ namespace EterniaCoop
         // Input object (C++ side of the game's input). Global pointer; fields: +0x10 player count,
         // +0x18 remap table (0x1C x 24-byte entries per player), +0x30 buttons (0xAE x 20 per player),
         // +0x48 sticks (2 x 20 per player).
-        public static int InputObject = 0x6449F8;
+        public static int InputObject = 0x6459B8;
 
         // Emulated PSP pad (held/pressed/released words, repeat timers, per-button bools), filled from player 1.
-        public static int Pad = 0x8C9180;
+        public static int Pad = 0x8CA140;
         public const int PadSize = 0x144;
 
         // Battle: one 0x20-byte command block per party slot; each party actor reads its own via actor+0xF0.
-        public static int CmdBlocks = 0x12CEBA0;
+        public static int CmdBlocks = 0x12CFB60;
         public const int CmdSize = 0x20;
-        public static int ActorArray = 0x12CECD8;
+        public static int ActorArray = 0x12CFC98;
         public const int ActorSize = 0x248, ActorCount = 13;
         // Battle state flags (byte); bit 0 = battle menu open / paused (set by Start in FUN_D2C80).
-        public static int BattleFlags = 0x12CEB7A;
+        public static int BattleFlags = 0x12CFB3A;
         // Battle menu owner (byte): command block index + 1 of whoever opened it with the menu button, 0 = none.
-        public static int MenuOpener = 0x12CEB8C;
+        public static int MenuOpener = 0x12CFB4C;
         // Target selection (hold the target button): the targeting actor's index + 1, 0 = none. While set and its
         // button is held, the battle pauses (BattleFlags bit 0, like the menu) and FUN_113EA0 switches its target.
-        public static int TargetActor = 0x12CEB8D;
+        public static int TargetActor = 0x12CFB4D;
 
         // Party (menu/save side): member ids (4 x short) and control mode per slot (byte: 0 Auto, 1 Semi-Auto).
-        public static int PartyIds = 0x11CAD10, SlotModes = 0x11CAD38;
+        public static int PartyIds = 0x11CBCD0, SlotModes = 0x11CBCF8;
 
         // Current area (2 shorts, e.g. 06 00 6F 00 in the field); all zero on the title screen.
-        public static int Area = 0x11CAFC4;
+        public static int Area = 0x11CBF84;
 
         // Functions we call or hook.
-        public static int BattleCommands = 0x1121E0;   // FUN_1121E0(uint* padHeld): pad -> slot 0's command block
-        public static int BuildPad = 0x19DBC0;         // FUN_19DBC0(pad, rate, flag): input object (player 1) -> PSP pad
-        public static int ApplyHit = 0x8E320;          // FUN_8E320(type, flags, hit, attacker, victim)
+        public static int BattleCommands = 0x1129C0;   // FUN_1121E0(uint* padHeld): pad -> slot 0's command block
+        public static int BuildPad = 0x19E3F0;         // FUN_19DBC0(pad, rate, flag): input object (player 1) -> PSP pad
+        public static int ApplyHit = 0x8EB00;          // FUN_8E320(type, flags, hit, attacker, victim)
         // Game options object (pointer); +0x21 = rumble on.
-        public static int GameOptions = 0x6449E0;
+        public static int GameOptions = 0x6459A0;
 
         // Battle camera: zoom setting (short, 0x200 closest .. 0x29C farthest; copied to the zoom target each frame
         // while the camera mode is 0) and camera mode (byte: 0 normal, 1, >= 2 scripted - spells, mystic artes).
-        public static int CamZoom = 0x12CEB78, CamMode = 0x12CEB7F;
+        public static int CamZoom = 0x12CFB38, CamMode = 0x12CFB3F;
         // Battle camera scroll (short): -(centre x >> 4), clamped to the field (FUN_D6420's result).
-        public static int CamScroll = 0x12CEAB8;
+        public static int CamScroll = 0x12CFA78;
         // The scroll the camera shows now (short); it eases toward CamScroll each frame.
-        public static int CamScrollNow = 0x12CEA98;
+        public static int CamScrollNow = 0x12CFA58;
         // The zoom the camera shows now (short); it eases toward the zoom setting (CamZoom).
-        public static int ZoomNow = 0x12CEA9C;
+        public static int ZoomNow = 0x12CFA5C;
 
         // Battle background (BattleGround): FUN_10D500 dispatches the stage's background routine; FUN_11E6F0 draws one
         // textured quad (primitive struct); FUN_120F70 draws a solid rectangle from the work struct (its y at FillY).
-        public static int DrawBg = 0x10D500, DrawQuad = 0x11E6F0, FillRect = 0x120F70, FillY = 0x11CE662;
+        public static int DrawBg = 0x10DCE0, DrawQuad = 0x11EF30, FillRect = 0x1217B0, FillY = 0x11CF622;
         // Global draw state (texture binding cache, see FUN_11D1C0 / FUN_11D8C0), 0x20 bytes each.
-        public static int DrawStateA = 0x594300, DrawStateB = 0x865A10;
+        public static int DrawStateA = 0x5952D0, DrawStateB = 0x8669D0;
     }
 
     // Battle actor field offsets.
@@ -163,6 +163,37 @@ namespace EterniaCoop
                     if (p != IntPtr.Zero) return p;
                 }
             return IntPtr.Zero;
+        }
+
+        // Start of the function containing rva, from the module's unwind table (.pdata: RUNTIME_FUNCTION entries,
+        // sorted). A function split into chunks is followed back to its primary entry. 0 if rva is in no function.
+        public static int FunctionStart(int rva)
+        {
+            if (Base == 0) return 0;
+            int pe = Marshal.ReadInt32(At(0x3C));
+            int dir = pe + 24 + 112 + 3 * 8;   // PE32+ optional header: data directory 3 = exception table
+            int table = Marshal.ReadInt32(At(dir)), count = Marshal.ReadInt32(At(dir + 4)) / 12;
+            int lo = 0, hi = count - 1;
+            while (lo <= hi)
+            {
+                int mid = (lo + hi) / 2, e = table + mid * 12;
+                int begin = Marshal.ReadInt32(At(e)), end = Marshal.ReadInt32(At(e + 4));
+                if (rva < begin) hi = mid - 1;
+                else if (rva >= end) lo = mid + 1;
+                else
+                {
+                    for (int hop = 0; hop < 16; hop++)   // UNW_FLAG_CHAININFO: the primary entry follows the unwind codes
+                    {
+                        int unwind = Marshal.ReadInt32(At(e + 8)) & ~1;
+                        if ((Marshal.ReadByte(At(unwind)) >> 3 & 4) == 0) return begin;
+                        int codes = Marshal.ReadByte(At(unwind + 2));
+                        e = unwind + 4 + ((codes + 1) & ~1) * 2;
+                        begin = Marshal.ReadInt32(At(e));
+                    }
+                    return begin;
+                }
+            }
+            return 0;
         }
 
         public static IntPtr Alloc(int size)

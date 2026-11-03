@@ -10,7 +10,7 @@ namespace EterniaCoop
     static class Compatibility
     {
         // GameNative.dll of Tales of Eternia Remastered (Steam, October 2026 build).
-        public const string KnownSha256 = "6488BE2CE5ECC1DC9FC0216AA2462EC9AEBA7A464468D5FD61AD3C2A8356849B";
+        public const string KnownSha256 = "ADECC03B8E920FA707C57B303C75990805604FBD39E14014A425A6F02FAC94D8";
 
         public static bool Ok { get; private set; }          // false: leave the game alone entirely
         public static bool Exact { get; private set; }       // GameNative.dll is the exact supported build

@@ -98,6 +98,35 @@ namespace EterniaCoop
             return unbridged;
         }
 
+        // 100% Drop & Steal Rate 1.0.0 patches fixed GameNative addresses from game version 2.0.0. On any other build
+        // those bytes are other code: in 2.1.0 its patch at 0x72382 cuts an instruction out of the Auto characters' AI
+        // handler, and the first battle crashes. Null unless that version runs on a different build.
+        const string DropStealFile = "TalesOfEternia_DropStealMod", DropStealVersion = "1.0.0";
+        const string DropStealBuild = "6488BE2CE5ECC1DC9FC0216AA2462EC9AEBA7A464468D5FD61AD3C2A8356849B";   // game 2.0.0
+        static bool dropStealChecked;
+        static string dropStealWarning;
+
+        public static string DropStealWarning()
+        {
+            if (dropStealChecked) return dropStealWarning;
+            dropStealChecked = true;
+            try
+            {
+                if (Compatibility.Hash == null || Compatibility.Hash == DropStealBuild) return null;
+                foreach (var info in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
+                {
+                    string file = info.Location == null ? "" : Path.GetFileNameWithoutExtension(info.Location);
+                    if (!file.Equals(DropStealFile, StringComparison.OrdinalIgnoreCase) || info.Metadata.Version.ToString() != DropStealVersion) continue;
+                    dropStealWarning = "100% Drop & Steal 1.0.0 is made for game version 2.0.0: on this version it crashes battles. " +
+                        "Remove it until it's updated.";
+                    Plugin.Log.LogWarning(dropStealWarning + " (It patches fixed 2.0.0 addresses, e.g. GameNative+0x72382.)");
+                    break;
+                }
+            }
+            catch (Exception e) { Plugin.Log.LogWarning("Couldn't check 100% Drop & Steal: " + e.Message); }
+            return dropStealWarning;
+        }
+
         static bool Contains(byte[] data, byte[] marker)
         {
             for (int i = 0; i + marker.Length <= data.Length; i++)

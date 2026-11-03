@@ -18,7 +18,7 @@ namespace EterniaCoop
         static readonly string[] KeepModesSites = { "ResetSlot2", "ResetSlot3", "ResetSlot4" };
         static readonly string[] MenuTabSites = { "TabJe", "TabCursor1", "TabCursor2", "TabConfirm", "TabDraw" };
         static readonly string[] BattleSites =
-            { "BattleCommands", "BuildPad", "Pad", "PadHeld", "BattleFlags", "MenuOpener", "TargetActor", "TargetSwitchCall", "CmdBlocks", "ActorArray" };
+            { "BuildPad", "Pad", "PadHeld", "BattleFlags", "MenuOpener", "TargetActor", "TargetSwitchCall", "CmdBlocks", "ActorArray" };
         static readonly string[] RumbleSites =
         {
             "ApplyHit", "HitPaused", "RumbleAtkBlock", "RumbleAtkSide", "GameOptions", "RumbleStrength", "RumbleOption",
@@ -43,7 +43,7 @@ namespace EterniaCoop
             MenuTab = Core && Verify("Skills menu tab", MenuTabSites);
             // Two instructions reach the PSP pad (one at +4): they must agree.
             CoopBattle = Core && Verify("Co-op battle input", BattleSites) &&
-                Agree("Co-op battle input", "Pad", "PadHeld");
+                Agree("Co-op battle input", "Pad", "PadHeld") && SameFunction("Co-op battle input", "CmdBlocks", "PadHeld");
             Rumble = Core && Verify("Per-player rumble", RumbleSites) &&
                 (!Sites.Resolved("BattleFlags") || Agree("Per-player rumble", "BattleFlags", "HitPaused"));
             Camera = CoopBattle && Verify("Co-op camera", CameraSites);
@@ -78,7 +78,9 @@ namespace EterniaCoop
             if (Sites.Resolved("DrawBg")) Rva.DrawBg = Sites.Rva("DrawBg", 0);
             if (Sites.Resolved("DrawQuad")) Rva.DrawQuad = Sites.Rva("DrawQuad", 0);
             if (Sites.Resolved("FillRect")) Rva.FillRect = Sites.Rva("FillRect", 0);
-            if (Sites.Resolved("BattleCommands")) Rva.BattleCommands = Sites.Rva("BattleCommands", 0);
+            // The command builder FUN_1121E0: the function holding CmdBlocks (and PadHeld). Its prologue differs between
+            // builds (2.0.0 / 2.1.0), so it has no signature of its own.
+            if (Sites.Resolved("CmdBlocks")) Rva.BattleCommands = Native.FunctionStart(Sites.Rva("CmdBlocks", 0));
             if (Sites.Resolved("BuildPad")) Rva.BuildPad = Sites.Rva("BuildPad", 0);
             if (Sites.Resolved("ApplyHit")) Rva.ApplyHit = Sites.Rva("ApplyHit", 0);
         }
@@ -103,6 +105,15 @@ namespace EterniaCoop
             if (missing.Count == 0) return true;
             Plugin.Log.LogWarning(feature + ": off - game code not found for " + string.Join(", ", missing.ToArray()) +
                 " (the game was updated or another mod changed this code).");
+            return false;
+        }
+
+        // Both code sites lie in one function (found in the module's unwind table).
+        static bool SameFunction(string feature, string a, string b)
+        {
+            int fa = Native.FunctionStart(Sites.Rva(a, 0)), fb = Native.FunctionStart(Sites.Rva(b, 0));
+            if (fa != 0 && fa == fb) return true;
+            Plugin.Log.LogWarning(string.Format("{0}: off - {1} and {2} aren't in one function (0x{3:X} / 0x{4:X}).", feature, a, b, fa, fb));
             return false;
         }
 
