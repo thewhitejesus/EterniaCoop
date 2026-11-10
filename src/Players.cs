@@ -19,9 +19,9 @@ namespace EterniaCoop
         public static volatile bool[] HasDevice = { true, false, false, false };
         // While the controller manager is open the game gets no input at all.
         public static volatile bool BlockAll;
-        // While the battle menu is open, player 1 also listens to every other device: the remaster's battle menu takes
-        // player 1's input only, so whoever opened it (Start, or Tab on the keyboard) can use and close it - the
-        // closest we get to the PS1, where each player had their own menu.
+        // While the battle menu is open, player 1's input comes from the devices of whoever opened it (MenuOwner; from
+        // every device when the battle was paused with Start): the remaster's battle menu takes player 1's input only,
+        // so this lets the opener use and close it - the closest we get to the PS1, where each player had their own menu.
         public static bool ShareWithPlayer1;
         // Who opened the battle menu (0-3), or -1 when nobody owns it (paused with Start): only the owner's devices drive
         // it, so another player still holding a direction mid-combo can't move the menu cursor.
@@ -133,17 +133,22 @@ namespace EterniaCoop
             return result;
         }
 
+        // The game made its input players anew (UgxInputManager.Initialize): they listen to every device again until
+        // the next AutoAssign, which must not skip them as "unchanged".
+        public static void Forget() { lastAssignment = ""; }
+
         // Applies Desired() when it differs from the last assignment; called once a second and after manager changes.
         public static void AutoAssign(int keyboardPlayer)
         {
             var want = Desired(keyboardPlayer);
-            string key = "";
+            var sb = new System.Text.StringBuilder();
             for (int i = 0; i < 4; i++)
             {
-                key += i + ":";
-                foreach (var d in want[i]) key += d.deviceId + ",";
-                key += " ";
+                sb.Append(i).Append(':');
+                foreach (var d in want[i]) sb.Append(d.deviceId).Append(',');
+                sb.Append(' ');
             }
+            string key = sb.ToString();
             for (int i = 1; i < 4; i++) HasDevice[i] = want[i].Count > 0;
             if (key == lastAssignment) return;
             lastAssignment = key;

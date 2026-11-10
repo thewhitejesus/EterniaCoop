@@ -226,9 +226,12 @@ namespace EterniaCoop
                 if (rt != null && !rt.IsCreated()) { Object.Destroy(rt); cast[i] = null; }
             }
             if (cast[0] != null && cast[1] != null && cast[2] != null && cast[3] != null) return;
-            // Searching the loaded textures costs a little; stop after a few minutes if they never turn up.
-            if (Time.unscaledTime < nextLook || Time.unscaledTime > 300f && cast[0] == null) return;
-            nextLook = Time.unscaledTime + 1f;
+            // Searching the loaded textures costs a little: once a second at first, every half minute after the first
+            // few minutes, and not at all by then if none ever turned up.
+            float now = Time.unscaledTime;
+            bool late = now > 300f;
+            if (now < nextLook || (late && cast[0] == null && cast[1] == null && cast[2] == null && cast[3] == null)) return;
+            nextLook = now + (late ? 30f : 1f);
             try
             {
                 foreach (var t in Resources.FindObjectsOfTypeAll<Texture2D>())

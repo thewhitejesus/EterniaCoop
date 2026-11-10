@@ -87,6 +87,7 @@ namespace EterniaCoop
 #if COOP_DEBUG
             SelfTest();
 #endif
+            text = null;   // the copy of .text was only for searching
         }
 
 #if COOP_DEBUG

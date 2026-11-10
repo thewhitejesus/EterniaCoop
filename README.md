@@ -147,6 +147,7 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `PerPlayerRumble` | true | Rumble each player's own controller. Follows the game's rumble option. |
 | `CoopCamera` | true | With 2+ players, the battle camera follows everyone and zooms out as they spread apart. Off = the game's camera. |
 | `CoopCameraFrameParty` | true | Keep the whole party in view, AI-controlled characters too. Off = only the human players' characters. |
+| `CoopCameraFrameEnemies` | true | Also keep enemies in view, as far as the zoom limit leaves room around the party (the party always comes first). Off = party only. |
 | `CoopCameraMaxZoom` | 1040 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest, 1040 = the whole battlefield). Past about 730 the mod continues the ground below the original picture; on a stage whose ground it can't continue, the camera stops at 720. |
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |

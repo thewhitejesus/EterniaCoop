@@ -65,7 +65,7 @@ namespace EterniaCoop
     // Battle actor field offsets.
     static class Actor
     {
-        public const int Kind = 0x3C;       // short: 1 = character
+        public const int Kind = 0x3C;       // short: 0 = unused, 1 = in the fight (party character or enemy), 2 = knocked out
         public const int Side = 0x51;       // byte: 0 = party, 1 = enemy
         public const int Block = 0x56;      // byte: command block index (0 = player 1's); the PSP port rumbles block 0 only
         public const int Control = 0x57;    // byte: 0 Auto, 1 Semi-Auto (same values as Rva.SlotModes)
@@ -123,14 +123,23 @@ namespace EterniaCoop
             return true;
         }
 
-        // Writes bytes into code or data, lifting page protection for the write.
+        [DllImport("kernel32")]
+        static extern IntPtr GetCurrentProcess();
+        [DllImport("kernel32")]
+        static extern bool FlushInstructionCache(IntPtr process, IntPtr addr, UIntPtr size);
+
+        // Writes bytes into code or data, lifting page protection for the write. The instruction cache is flushed
+        // afterwards: x86 processors don't need it, but translators that run the game on other processors (Android,
+        // ARM) keep their own copy of the code and only learn of the change this way.
         public static void Write(int rva, byte[] bytes)
         {
             IntPtr p = At(rva);
+            var size = new UIntPtr((uint)bytes.Length);
             uint old;
-            VirtualProtect(p, new UIntPtr((uint)bytes.Length), PAGE_EXECUTE_READWRITE, out old);
+            VirtualProtect(p, size, PAGE_EXECUTE_READWRITE, out old);
             Marshal.Copy(bytes, 0, p, bytes.Length);
-            VirtualProtect(p, new UIntPtr((uint)bytes.Length), old, out old);
+            VirtualProtect(p, size, old, out old);
+            FlushInstructionCache(GetCurrentProcess(), p, size);
         }
 
         // Replaces `from` with `to` only if the bytes at rva are exactly `from`; logs and skips otherwise.

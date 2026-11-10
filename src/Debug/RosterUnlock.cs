@@ -1,4 +1,4 @@
-// Debug build only: [Debug] UnlockRoster = true fills the empty party list entries (0x11CAD10, six shorts) with the
+// Debug build only: [Debug] UnlockRoster = true fills the empty party list entries (Rva.PartyIds, six shorts) with the
 // playable characters not in it yet (1 Reid, 2 Farah, 3 Keele, 4 Meredy, 5 Ras, 6 Chat), for testing six-character
 // battles (Six Person Battle Expansion) on an early save. Their records already exist in the save block. In memory
 // only: the save file changes only if the game is saved afterwards.

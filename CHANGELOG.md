@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+- **The co-op camera keeps enemies in view too,** as far as the zoom limit leaves room around the party: the party
+  always fits first, and enemies beyond the outermost player are no longer hidden past the edge of the screen.
+  Setting `CoopCameraFrameEnemies` (off: party only). Thanks to TenshioftheRain for the suggestion.
+- **Closing the controller manager with Esc or Enter no longer presses that key in the game** (Esc opened the menu,
+  Enter confirmed): the game gets its input back once the key is let go.
+- The controller manager's plain window (used when the game's fonts aren't available) now shows the Field control row;
+  it could be selected and changed there, but wasn't drawn.
+- **Gentler on the game's code (for Android and ARM devices, where battles went black):** the mod's three battle
+  hooks used to rewrite the start of the hooked functions several times every battle frame. They are now written
+  once, when the game starts; so are the camera's patches, which used to go in during the first battle. The mod also
+  tells the system when it changes code, and keeps the data it updates every frame apart from code. Nothing changes
+  on a PC. Not confirmed to fix Android yet: reports welcome.
+- Small things: controller assignment is applied again if the game sets its input up a second time; the manager's
+  search for the character art slows down after a few minutes instead of running every second; the memory used to
+  find game code after an update is freed.
+
 ## 1.6.2 - 2026-11-03
 - **Works with game version 2.1.0** (the 2 November patch). The patch added the Special Skill Shortcut buttons and
   changed the battle command builder, so the mod couldn't find it and turned co-op battle input (and with it the

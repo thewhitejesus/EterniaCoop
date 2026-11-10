@@ -13,9 +13,9 @@ namespace EterniaCoop
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void BattleCmdFn(IntPtr padHeld);
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate void PadBuildFn(IntPtr pad, byte rate, int flag);
 
-        static MonoMod.RuntimeDetour.NativeDetour detour;
-        static BattleCmdFn original, hook;   // the hook delegate must stay referenced while native code can call it
+        static BattleCmdFn original;
         static PadBuildFn buildPad;
+        static bool installed;
         static readonly IntPtr[] pads = new IntPtr[4], states = new IntPtr[4];
         static IntPtr savedPad, savedCmd;
         static bool inHook;
@@ -23,7 +23,8 @@ namespace EterniaCoop
         // Features.CoopBattle has checked both functions and the addresses this uses.
         public static void Install()
         {
-            if (detour != null || Native.Base == 0) return;
+            if (installed || Native.Base == 0) return;
+            installed = true;
 
             for (int p = 0; p < 4; p++)
             {
@@ -34,11 +35,15 @@ namespace EterniaCoop
             savedCmd = Native.Alloc(Rva.CmdSize);
             buildPad = (PadBuildFn)Marshal.GetDelegateForFunctionPointer(Native.At(Rva.BuildPad), typeof(PadBuildFn));
 
-            hook = Hook;
-            detour = new MonoMod.RuntimeDetour.NativeDetour(Native.At(Rva.BattleCommands), Marshal.GetFunctionPointerForDelegate(hook));
-            original = detour.GenerateTrampoline<BattleCmdFn>();
+            original = NativeHook.Install<BattleCmdFn>(Rva.BattleCommands, Hook, "Co-op battle input");
             InstallTargetSwitch();
             Plugin.Log.LogMessage("Co-op battle input hooked" + (targetStub != IntPtr.Zero ? " (with target switching)." : "."));
+            // The camera's patches go in now too, not at the first battle frame (from inside the battle function they change).
+            if (Features.Camera)
+            {
+                CoopCamera.Install();
+                BattleGround.Install();   // if Features.Ground
+            }
         }
 
         // Command block: +0 held, +4 newly pressed, +8 raw pad bits (the rest is the combo history).
@@ -85,8 +90,6 @@ namespace EterniaCoop
                 ControlledSlots();
                 if (Features.Camera)
                 {
-                    CoopCamera.Install();   // once
-                    BattleGround.Install();   // once, if Features.Ground
                     humans[0] = true;       // player 1's character
                     for (int p = 1; p < 4; p++) humans[p] = wanted[p] && p < players;
                     CoopCamera.Update(humans);
@@ -136,12 +139,13 @@ namespace EterniaCoop
             int site = Sites.Rva("TargetSwitchCall", 0);
             if (Marshal.ReadByte(Native.At(site)) != 0xE8) { Plugin.Log.LogError("Target switching for players 2-4: unexpected code"); return; }
             long fn = Native.Base + site + 5 + Marshal.ReadInt32(Native.At(site + 1));   // FUN_113EA0
-            IntPtr region = Native.AllocNear(0x400);
+            IntPtr region = Native.AllocNear(0x2000);
             if (region == IntPtr.Zero) { Plugin.Log.LogError("Target switching for players 2-4: no memory near the game module"); return; }
             long S = region.ToInt64(), padAbs = Native.Base + Rva.Pad;
-            targetOn = new IntPtr(S + 0x100);
-            targetSrc = new IntPtr(S + 0x108);
-            long saved = S + 0x200;
+            // The stub's data sits on its own page, away from the code: it is written every frame.
+            targetOn = new IntPtr(S + 0x1000);
+            targetSrc = new IntPtr(S + 0x1008);
+            long saved = S + 0x1100;
 
             var c = new System.Collections.Generic.List<byte>();
             Func<long, int, byte[]> rel = (target, end) => BitConverter.GetBytes((int)(target - (S + end)));

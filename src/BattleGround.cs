@@ -32,7 +32,7 @@ namespace EterniaCoop
         // Primitive (the game's work struct): +0x20 four corners (x, y shorts: top-left, top-right, bottom-left,
         // bottom-right), +0x64 depth, +0x66 texture page, +0x6A u, v, width, height.
         const int PrimSize = 0xC0, P0 = 0x20, StateSize = 0x20;
-        const int Region = 0x10000, BufOffset = 0x200, MaxQuads = (Region - BufOffset) / PrimSize;
+        const int Region = 0x11000, BufOffset = 0x1100, MaxQuads = (Region - BufOffset) / PrimSize;
         public const short ZoomGameMax = 0x29C;
         // PS1 screen y the extension reaches: zoomed far out the view reaches well below the PS1's 0xE0. Rows near the
         // camera are spaced truly (homography), so it takes many of them to get there.
@@ -42,8 +42,7 @@ namespace EterniaCoop
 
         static IntPtr rec, count, buf, extra, snapA, snapB;
         static readonly byte[] liveA = new byte[StateSize], liveB = new byte[StateSize], kept = new byte[StateSize];
-        static MonoMod.RuntimeDetour.NativeDetour detour;
-        static DrawBgFn original, hook;
+        static DrawBgFn original;
         static QuadFn drawQuad;
         static bool installed;
 
@@ -51,7 +50,7 @@ namespace EterniaCoop
         public static bool Usable { get { return installed && !failed; } }
         static bool failed;
 
-        // Battle thread, from the battle input hook (once). Features.Ground has checked every site.
+        // Once, with the battle input hook (CoopBattleInput.Install). Features.Ground has checked every site.
         public static void Install()
         {
             if (installed || !Features.Ground) return;
@@ -60,11 +59,12 @@ namespace EterniaCoop
             IntPtr region = Native.AllocNear(Region);
             if (region == IntPtr.Zero) { Plugin.Log.LogWarning("Battle ground extension: no memory near the game module."); Features.Ground = false; return; }
             long S = region.ToInt64();
-            // 0x00 quad stub, 0x80 fill stub, 0x100 data (recording flag, quad count, draw state copies), 0x200 quads
-            rec = new IntPtr(S + 0x100);
-            count = new IntPtr(S + 0x104);
-            snapA = new IntPtr(S + 0x120);
-            snapB = new IntPtr(S + 0x140);
+            // 0x00 quad stub, 0x80 fill stub; from 0x1000 (its own pages: written every frame, unlike the code) the data
+            // (recording flag, quad count, draw state copies), 0x1100 quads
+            rec = new IntPtr(S + 0x1000);
+            count = new IntPtr(S + 0x1004);
+            snapA = new IntPtr(S + 0x1020);
+            snapB = new IntPtr(S + 0x1040);
             buf = new IntPtr(S + BufOffset);
             extra = Marshal.AllocHGlobal(PrimSize);
 
@@ -118,9 +118,7 @@ namespace EterniaCoop
             Marshal.Copy(fill, 0, new IntPtr(S2), fill.Length);
 
             drawQuad = (QuadFn)Marshal.GetDelegateForFunctionPointer(Native.At(Rva.DrawQuad), typeof(QuadFn));
-            hook = Hook;
-            detour = new MonoMod.RuntimeDetour.NativeDetour(Native.At(Rva.DrawBg), Marshal.GetFunctionPointerForDelegate(hook));
-            original = detour.GenerateTrampoline<DrawBgFn>();
+            original = NativeHook.Install<DrawBgFn>(Rva.DrawBg, Hook, "Battle ground extension");
 
             var patch = new byte[] { 0xE9, 0, 0, 0, 0 };
             BitConverter.GetBytes((int)(S - (Native.Base + Rva.DrawQuad + 5))).CopyTo(patch, 1);

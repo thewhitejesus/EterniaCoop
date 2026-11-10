@@ -1,6 +1,8 @@
 // Eternia Co-op - local 4-player co-op for Tales of Eternia Remastered: controllers 2-4 drive party slots 2-4
 // in battle, the way the PS1 version's multitap mode did.
+using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
@@ -45,9 +47,9 @@ namespace EterniaCoop
             bool share = CoopActive && Settings.AutoAssignControllers.Value && Battle.MenuOpen();
             // Field control: outside battle, player 1's controls go to the chosen player; back the moment a battle starts.
             int field = CoopActive && Settings.AutoAssignControllers.Value && Features.CoopBattle && Native.Base != 0 &&
-                Battle.Actors() == System.IntPtr.Zero ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
+                Battle.Actors() == IntPtr.Zero ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
             // The battle menu belongs to whoever opened it (block + 1 in Rva.MenuOpener; 0 = paused with Start, no owner).
-            int owner = share ? System.Runtime.InteropServices.Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1 : -1;
+            int owner = share ? Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1 : -1;
             if ((share != Players.ShareWithPlayer1 || field != Players.FieldPlayer || owner != Players.MenuOwner) &&
                 Players.InputManager != null)
             {
@@ -79,7 +81,7 @@ namespace EterniaCoop
             // Main menu only: hide once a map is loaded (the area id is 0 on the title screen).
             // Rva.Area is only known to be right on the supported build or once Features has verified it.
             bool areaKnown = Native.Base != 0 && (Compatibility.Exact || Features.Core);
-            if (areaKnown && System.Runtime.InteropServices.Marshal.ReadInt32(Native.At(Rva.Area)) != 0) return;
+            if (areaKnown && Marshal.ReadInt32(Native.At(Rva.Area)) != 0) return;
             string name = Name + " " + Version;
 #if COOP_DEBUG
             name += " DEBUG";

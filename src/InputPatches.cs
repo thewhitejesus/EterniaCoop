@@ -12,6 +12,7 @@ namespace EterniaCoop
         static void Prefix(object __instance, ref int playerNum)
         {
             Players.InputManager = __instance;
+            Players.Forget();
             int players = Settings.PlayerCount.Value;
             if (Compatibility.Ok && players >= 2 && players <= 4) Features.Check();
             if (!Compatibility.Ok || !Features.Core || players < 2 || players > 4)

@@ -32,8 +32,9 @@ namespace EterniaCoop
             hotkeys = c.Bind("Debug", "Hotkeys", true, "Research hotkeys (see ResearchTools.cs). Debug build only.");
             verbose = c.Bind("Debug", "VerboseLog", true, "Log per-player input and battle hook statistics every few seconds.");
             logInterval = c.Bind("Debug", "LogIntervalSeconds", 5f, "Interval for the verbose log.");
-            peekRvas = c.Bind("Debug", "PeekRvas", "011CAD38", "Numpad- logs 256 bytes around each of these GameNative RVAs (hex, comma separated).");
-            pokeList = c.Bind("Debug", "PokeList", "011CAD39=01", "Numpad+ writes these bytes (hex rva=hex value, comma separated). Don't save while testing.");
+            // Defaults: the control modes (Rva.SlotModes) of game version 2.1.0.
+            peekRvas = c.Bind("Debug", "PeekRvas", "011CBCF8", "Numpad- logs 256 bytes around each of these GameNative RVAs (hex, comma separated).");
+            pokeList = c.Bind("Debug", "PokeList", "011CBCF9=01", "Numpad+ writes these bytes (hex rva=hex value, comma separated). Don't save while testing.");
         }
 
         public static void Update(ConfigFile config)
@@ -205,9 +206,28 @@ namespace EterniaCoop
         // ---- F5/F6/F7 memory scan, peek/poke over GameNative's .data ----
         static class MemScan
         {
-            const int DataRva = 0x54F000, DataSize = 0xD83DAC, ShowMax = 40;   // .data section of GameNative.dll
+            const int ShowMax = 40;
+            static int DataRva, DataSize;   // GameNative's .data section, from its own PE headers (it moves between builds)
             static readonly byte[][] stateValues = new byte[2][];
             static List<int> candidates;
+
+            static bool FindData()
+            {
+                if (DataSize != 0) return true;
+                IntPtr b = Native.At(0);
+                int pe = Marshal.ReadInt32(b, 0x3C);
+                int sections = Marshal.ReadInt16(b, pe + 6), table = pe + 24 + Marshal.ReadInt16(b, pe + 20);
+                for (int i = 0; i < sections; i++)
+                {
+                    int h = table + i * 40;
+                    if (Marshal.ReadInt64(b, h) != 0x617461642E) continue;   // ".data\0\0\0"
+                    DataRva = Marshal.ReadInt32(b, h + 12);
+                    DataSize = Marshal.ReadInt32(b, h + 8);
+                    return true;
+                }
+                Plugin.Log.LogWarning("MemScan: no .data section found in GameNative.");
+                return false;
+            }
 
             static byte[] Snapshot()
             {
@@ -224,6 +244,7 @@ namespace EterniaCoop
 
             public static void Mark(int state)
             {
+                if (!FindData()) return;
                 byte[] now = Snapshot();
                 string name = state == 0 ? "A (F6)" : "B (F7)";
                 if (stateValues[state] == null || candidates == null)
@@ -264,6 +285,7 @@ namespace EterniaCoop
 
             public static void Poke(int rva, int value)
             {
+                if (!FindData()) return;
                 if (rva < DataRva || rva >= DataRva + DataSize) { Plugin.Log.LogWarning(string.Format("Poke: 0x{0:X8} is outside .data", rva)); return; }
                 byte old = Marshal.ReadByte(Native.At(rva));
                 Marshal.WriteByte(Native.At(rva), (byte)value);

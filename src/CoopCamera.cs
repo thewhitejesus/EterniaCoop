@@ -9,6 +9,7 @@
 // cameras (spells, mystic artes: mode >= 2) never reach it. Everything else - clamping, rendering - stays the game's.
 //
 // Knocked-out characters (kind 2) aren't framed: with player 1's character down the camera follows the others.
+// Standing enemies (kind 1, side 1) are framed in the room the zoom limit leaves around the party, never at its cost.
 // Closing the battle menu or coming back from its submenus snaps the camera to the leader (actor 0) before it eases
 // back; while we steer, that snap is undone (GuardSnap), so the camera stays where it was.
 using System;
@@ -56,7 +57,7 @@ namespace EterniaCoop
             return target + (change + temp) * exp;
         }
 
-        // Battle thread (from the battle input hook, once GameNative's camera sites are resolved).
+        // Once, with the battle input hook (CoopBattleInput.Install); Features.Camera has checked the sites.
         public static void Install()
         {
             if (installed || !Features.Camera) return;
@@ -66,10 +67,11 @@ namespace EterniaCoop
             { Plugin.Log.LogError("Co-op camera: unexpected code, not installed"); return; }
             int scrollRva = site + 10 + Marshal.ReadInt32(Native.At(site + 6));
             scrollFor = (ScrollFn)Marshal.GetDelegateForFunctionPointer(Native.At(scrollRva), typeof(ScrollFn));
-            stub = Native.AllocNear(64);
+            stub = Native.AllocNear(0x2000);
             if (stub == IntPtr.Zero) { Plugin.Log.LogError("Co-op camera: no memory near the game module"); return; }
-            active = new IntPtr(stub.ToInt64() + 32);
-            centre = new IntPtr(stub.ToInt64() + 34);
+            // The stub's data sits on its own page, away from the code: it is written every frame.
+            active = new IntPtr(stub.ToInt64() + 0x1000);
+            centre = new IntPtr(stub.ToInt64() + 0x1002);
 
             // stub: movzx ecx, word [rdx+rbx+0x10]   ; the original load
             //       cmp byte [rip+active], 0
@@ -174,6 +176,34 @@ namespace EterniaCoop
                     humans++;
                 }
 
+            // Standing enemies too (CoopCameraFrameEnemies), but only as far as the zoom limit leaves room around the
+            // party: the party always fits first, and the room left over is shared between the two sides.
+            int partyMin = min, partyMax = max;
+            float limit = Math.Max(ZoomMin, Math.Min(ZoomFullField, Settings.CoopCameraMaxZoom.Value));
+            // Past ZoomNoBand the view reaches below the battle picture: only while the ground there can be continued.
+            if (!BattleGround.Usable) limit = Math.Min(limit, ZoomNoBand);
+            if (humans >= 1 && Settings.CoopCameraFrameEnemies.Value)
+            {
+                int foeMin = int.MaxValue, foeMax = int.MinValue;
+                for (int i = 0; i < Rva.ActorCount; i++)
+                {
+                    IntPtr a = Battle.ActorAt(actors, i);
+                    if (Marshal.ReadInt16(a, Actor.Kind) != 1 || Marshal.ReadByte(a, Actor.Side) == 0) continue;
+                    int ax = Marshal.ReadInt16(a, Actor.X);
+                    if (ax < foeMin) foeMin = ax;
+                    if (ax > foeMax) foeMax = ax;
+                }
+                if (foeMin <= foeMax)
+                {
+                    float spare = Math.Max(0f, (ViewWidth(limit) - 2 * Edge) * 16f - (max - min));   // world units
+                    float left = Math.Max(0, min - foeMin), right = Math.Max(0, foeMax - max);
+                    float takeLeft = Math.Min(left, Math.Max(spare / 2f, spare - right));
+                    float takeRight = Math.Min(right, spare - takeLeft);
+                    min -= (int)takeLeft;
+                    max += (int)takeRight;
+                }
+            }
+
             if (humans < 1)
             {
                 // One player, everyone down, or a scripted / paused camera: the game's camera. Ease a zoom we changed back first.
@@ -189,28 +219,26 @@ namespace EterniaCoop
                 return;
             }
 
-            float rawMid = (min + max) / 2f;
+            float rawMid = (min + max) / 2f, partyMid = (partyMin + partyMax) / 2f;
             if (!tracking || resume)
             {
                 // Pick up the camera where it actually is (the game's scroll: -(x >> 4)), so taking over - at the
                 // start, after a spell's camera, when a second player joins - glides instead of jumping.
                 x = -Marshal.ReadInt16(Native.At(Rva.CamScroll)) * 16f + 8f;
-                xVel = 0; lastMid = rawMid; leadVel = 0;
+                xVel = 0; lastMid = partyMid; leadVel = 0;
                 if (!tracking) { zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom)); zoomVel = 0; lastSpread = (max - min) / 16f; }
                 tracking = true; resume = false;
             }
 
-            // Look-ahead: when the players move together, lead a little in that direction (capped, smoothed).
-            leadVel += ((rawMid - lastMid) * 60f - leadVel) * 0.1f;   // world units per second
-            lastMid = rawMid;
+            // Look-ahead: when the players move together, lead a little in that direction (capped, smoothed). Only the
+            // party's movement counts, not the enemies'.
+            leadVel += ((partyMid - lastMid) * 60f - leadVel) * 0.1f;   // world units per second
+            lastMid = partyMid;
             float lead = Math.Max(-LeadMax * 16f, Math.Min(LeadMax * 16f, leadVel * 0.25f));
 
             // Zoom to fit everyone (plus Edge on both sides), within the allowed range; small spread changes ignored.
             float spread = (max - min) / 16f;
             if (Math.Abs(spread - lastSpread) > DeadZone) lastSpread = spread;
-            float limit = Math.Max(ZoomMin, Math.Min(ZoomFullField, Settings.CoopCameraMaxZoom.Value));
-            // Past ZoomNoBand the view reaches below the battle picture: only while the ground there can be continued.
-            if (!BattleGround.Usable) limit = Math.Min(limit, ZoomNoBand);
             float wantZoom = Math.Max(baseZoom, Math.Min(limit, ZoomFor(lastSpread + 2 * Edge)));
 
             // Centre between them. If they can't all fit even at the limit, keep player 1's character in view
@@ -218,8 +246,10 @@ namespace EterniaCoop
             float mid = rawMid + lead;
             float halfView = ViewWidth(Math.Min(limit, Math.Max(zoom, wantZoom))) / 2f * 16f;   // world units
             float room = halfView - Edge * 16f;
-            // Never let the lead (or a too-wide spread) push anyone out: keep everyone in reach, player 1 above all.
+            // Never let the lead (or a too-wide spread) push anyone out: keep the party in reach, player 1 above all
+            // (enemies only ever get the room the party leaves).
             mid = Math.Max(max - room, Math.Min(min + room, mid));
+            mid = Math.Max(partyMax - room, Math.Min(partyMin + room, mid));
             if (leaderUp && Math.Abs(leaderX - mid) > room) mid = leaderX + (mid > leaderX ? room : -room);
 
             // Zoom out promptly (nobody slips off screen), zoom back in slowly and only after the players have stayed

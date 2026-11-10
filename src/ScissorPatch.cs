@@ -3,6 +3,8 @@
 // there. While the co-op camera has zoomed out that far in battle, the full-width scissor is switched off right after
 // the game (and any other mod, e.g. Uncropped Backgrounds, which widens it) has set it. Narrower scissors (menu lists
 // and the like) are left alone.
+using System;
+using System.Runtime.InteropServices;
 using HarmonyLib;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -22,8 +24,7 @@ namespace EterniaCoop
         static bool Active()
         {
             return Features.Ground && BattleGround.Usable && Settings.CoopCamera.Value && Native.Base != 0 &&
-                Battle.Actors() != System.IntPtr.Zero &&
-                System.Runtime.InteropServices.Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > BattleGround.ZoomGameMax;
+                Battle.Actors() != IntPtr.Zero && Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > BattleGround.ZoomGameMax;
         }
     }
 }

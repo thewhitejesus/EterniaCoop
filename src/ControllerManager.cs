@@ -19,6 +19,7 @@ namespace EterniaCoop
         public static bool Open { get; private set; }
 
         static int selected;
+        static bool releasing;   // just closed: the game's input is still blocked (see Update)
         static string message;
         static float messageUntil, comboSince = -1, openedAt;
         static readonly Dictionary<int, float> lastActive = new Dictionary<int, float>();   // deviceId -> time
@@ -181,6 +182,13 @@ namespace EterniaCoop
             Gamepad comboPad = ComboHeld();
             ManagerView.FindCast();
             if (key || comboPad != null || (Open && closeKey)) Toggle(comboPad);
+            // Closed: the game gets its input back once Esc / Enter are let go, so it doesn't take the closing key
+            // press as its own (Esc and Enter are game keys too).
+            if (releasing && (kb == null || !(kb[Key.Escape].isPressed || kb[Key.Enter].isPressed)))
+            {
+                releasing = false;
+                Players.BlockAll = false;
+            }
             if (!Open) { ManagerView.Hide(); return; }
 
             var devices = Players.Devices();
@@ -248,7 +256,8 @@ namespace EterniaCoop
         static void Toggle(Gamepad opener)
         {
             Open = !Open;
-            Players.BlockAll = Open;
+            if (Open) Players.BlockAll = true;
+            releasing = !Open;   // Update lifts the block
             comboSince = -1;
             if (Open)
             {
@@ -435,7 +444,8 @@ namespace EterniaCoop
             var devices = Players.Devices();
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
             string note = ConflictNote();
-            float w = u * 46, rowH = u * 2.6f, h = u * 15.5f + rowH * devices.Count + (note == "" ? 0 : u * 1.4f);
+            int rows = devices.Count + 1;   // the devices, then the Field control row
+            float w = u * 46, rowH = u * 2.6f, h = u * 15.5f + rowH * rows + (note == "" ? 0 : u * 1.4f);
             var box = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
 
             // Dim the game behind, then the window: gradient, gold frame with a fine inner line, as the game's menus.
@@ -449,26 +459,26 @@ namespace EterniaCoop
 
             float y = box.y + u * 4.6f, pillW = u * 3.4f, gap = u * 0.35f;
             float pillsX = box.xMax - u * 1.5f - 5 * pillW - 4 * gap;
-            for (int i = 0; i < devices.Count; i++)
+            for (int i = 0; i < rows; i++)
             {
+                bool field = i == devices.Count;
                 var r = new Rect(box.x + u * 1.2f, y, w - u * 2.4f, rowH - u * 0.35f);
-                float since;
-                bool active = lastActive.TryGetValue(devices[i].deviceId, out since) && Time.unscaledTime - since < 0.3f;
                 bool sel = i == selected;
                 Fill(r, sel ? new Color(0.45f, 0.62f, 1f, 0.22f) : new Color(1, 1, 1, 0.04f));
                 if (sel) Frame(r, 1, Gold);
-                if (active) Fill(new Rect(r.x, r.y, u * 0.3f, r.height), Color.white);
+                if (!field && RecentlyActive(devices[i])) Fill(new Rect(r.x, r.y, u * 0.3f, r.height), Color.white);
                 if (sel) Text(new Rect(r.x + u * 0.5f, r.y, u * 1.5f, r.height), "▶", rowText, Gold, 1);
 
-                string name = Name(devices, i) + (Players.IsManual(devices[i]) ? "" : "  (auto)");
+                string name = field ? "Field control" : Name(devices, i) + (Players.IsManual(devices[i]) ? "" : "  (auto)");
+                int player = field ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : players[i];
                 Text(new Rect(r.x + u * 2f, r.y, pillsX - r.x - u * 2.5f, r.height), name, rowText, sel ? Color.white : new Color(0.85f, 0.88f, 0.95f), 1);
 
-                // Off, P1..P4: the chosen one lit in that player's colour.
-                for (int k = 0; k < 5; k++)
+                // Off, P1..P4: the chosen one lit in that player's colour. (Field control has no Off.)
+                for (int k = field ? 1 : 0; k < 5; k++)
                 {
                     int p = k - 1;
                     var pr = new Rect(pillsX + k * (pillW + gap), r.y + r.height * 0.18f, pillW, r.height * 0.64f);
-                    bool on = players[i] == p;
+                    bool on = player == p;
                     Color c = p < 0 ? new Color(0.6f, 0.6f, 0.65f) : PlayerColors[p];
                     if (on) Fill(pr, new Color(c.r * 0.55f, c.g * 0.55f, c.b * 0.55f, 0.95f));
                     Frame(pr, 1, on ? c : new Color(1, 1, 1, 0.18f));
