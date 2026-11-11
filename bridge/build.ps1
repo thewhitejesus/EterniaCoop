@@ -26,7 +26,7 @@ function Build($dll, $refs, $src) {
 Build "$out\shim\BepInEx.Core.dll" @("/r:BE5=$core\BepInEx.dll") "$PSScriptRoot\src\Core"
 Build "$out\shim\BepInEx.Unity.Mono.dll" @("/r:BE5=$core\BepInEx.dll", "/r:$out\shim\BepInEx.Core.dll",
     "/r:$managed\UnityEngine.CoreModule.dll") "$PSScriptRoot\src\UnityMono"
-Build "$out\BepInEx6Bridge.dll" @("/r:$core\BepInEx.dll", "/r:$core\Mono.Cecil.dll", "/r:$managed\UnityEngine.CoreModule.dll",
+Build "$out\BepInEx6Bridge.dll" @("/r:$core\BepInEx.dll", "/r:$core\Mono.Cecil.dll", "/r:$core\0Harmony.dll", "/r:$managed\UnityEngine.CoreModule.dll",
     "/r:$managed\UnityEngine.dll") "$PSScriptRoot\src\Loader"
 Write-Host "Built -> $out"
 

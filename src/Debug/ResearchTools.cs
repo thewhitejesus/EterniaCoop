@@ -25,7 +25,8 @@ namespace EterniaCoop
         static ConfigEntry<bool> hotkeys, verbose;
         static ConfigEntry<float> logInterval;
         static ConfigEntry<string> peekRvas, pokeList;
-        static float nextLog;
+        static float nextLog, fpsWorst;
+        static int fpsFrames;
 
         public static void Bind(ConfigFile c)
         {
@@ -70,8 +71,16 @@ namespace EterniaCoop
                 if (kb[Key.NumpadMultiply].wasPressedThisFrame) RemapTable.CopyPlayer0();
             }
 
+            // Frame rate: frames and the slowest frame since the last log line.
+            fpsFrames++;
+            if (Time.unscaledDeltaTime > fpsWorst) fpsWorst = Time.unscaledDeltaTime;
+
             if (verbose.Value && Time.unscaledTime >= nextLog)
             {
+                float span = Time.unscaledTime - (nextLog - logInterval.Value);
+                Plugin.Log.LogInfo(string.Format("FPS {0:0.0} average, slowest frame {1:0} ms ({2} frames in {3:0.0} s)",
+                    fpsFrames / Mathf.Max(span, 0.001f), fpsWorst * 1000f, fpsFrames, span));
+                fpsFrames = 0; fpsWorst = 0;
                 nextLog = Time.unscaledTime + logInterval.Value;
                 Plugin.Log.LogInfo("Input requests by playerNo  info[" + Drain(infoCalls) + "]  stick[" + Drain(stickCalls) + "]");
                 string sticks = DrainSticks();

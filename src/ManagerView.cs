@@ -226,12 +226,13 @@ namespace EterniaCoop
                 if (rt != null && !rt.IsCreated()) { Object.Destroy(rt); cast[i] = null; }
             }
             if (cast[0] != null && cast[1] != null && cast[2] != null && cast[3] != null) return;
-            // Searching the loaded textures costs a little: once a second at first, every half minute after the first
-            // few minutes, and not at all by then if none ever turned up.
+            // Listing every loaded texture costs a frame hitch, so: only on the title screen (where the game has them
+            // loaded; the area id is 0 there), every 2 seconds, and not at all after a few minutes if none turned up.
             float now = Time.unscaledTime;
-            bool late = now > 300f;
-            if (now < nextLook || (late && cast[0] == null && cast[1] == null && cast[2] == null && cast[3] == null)) return;
-            nextLook = now + (late ? 30f : 1f);
+            if (now < nextLook) return;
+            nextLook = now + 2f;
+            if (now > 300f && cast[0] == null && cast[1] == null && cast[2] == null && cast[3] == null) return;
+            if (Native.Base == 0 || !Features.Core || System.Runtime.InteropServices.Marshal.ReadInt32(Native.At(Rva.Area)) != 0) return;
             try
             {
                 foreach (var t in Resources.FindObjectsOfTypeAll<Texture2D>())

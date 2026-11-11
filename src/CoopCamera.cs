@@ -57,7 +57,7 @@ namespace EterniaCoop
             return target + (change + temp) * exp;
         }
 
-        // Once, with the battle input hook (CoopBattleInput.Install); Features.Camera has checked the sites.
+        // Once, at the first battle frame (CoopBattleInput.PatchBattleFunction); Features.Camera has checked the sites.
         public static void Install()
         {
             if (installed || !Features.Camera) return;

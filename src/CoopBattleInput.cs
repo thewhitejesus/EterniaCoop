@@ -36,14 +36,21 @@ namespace EterniaCoop
             buildPad = (PadBuildFn)Marshal.GetDelegateForFunctionPointer(Native.At(Rva.BuildPad), typeof(PadBuildFn));
 
             original = NativeHook.Install<BattleCmdFn>(Rva.BattleCommands, Hook, "Co-op battle input");
+            Plugin.Log.LogMessage("Co-op battle input hooked.");
+            if (Features.Camera) BattleGround.Install();   // if Features.Ground
+        }
+
+        // The two patches inside the battle function itself (FUN_D2C80: the target switch call, the camera's position
+        // read) go in at the first battle frame, the rest of the battle hooks when a save is loaded (Plugin): Six Person
+        // Battle Expansion checks these functions' bytes and switches itself off if anything there differs.
+        static bool battlePatched;
+
+        static void PatchBattleFunction()
+        {
+            battlePatched = true;
             InstallTargetSwitch();
-            Plugin.Log.LogMessage("Co-op battle input hooked" + (targetStub != IntPtr.Zero ? " (with target switching)." : "."));
-            // The camera's patches go in now too, not at the first battle frame (from inside the battle function they change).
-            if (Features.Camera)
-            {
-                CoopCamera.Install();
-                BattleGround.Install();   // if Features.Ground
-            }
+            if (targetStub != IntPtr.Zero) Plugin.Log.LogMessage("Target switching for players 2-4 installed.");
+            if (Features.Camera) CoopCamera.Install();
         }
 
         // Command block: +0 held, +4 newly pressed, +8 raw pad bits (the rest is the combo history).
@@ -57,6 +64,7 @@ namespace EterniaCoop
             inHook = true;
             try
             {
+                if (!battlePatched) PatchBattleFunction();
                 IntPtr obj = Marshal.ReadIntPtr(Native.At(Rva.InputObject));
                 if (obj == IntPtr.Zero) return;
                 int players = Marshal.ReadInt32(obj, 0x10);

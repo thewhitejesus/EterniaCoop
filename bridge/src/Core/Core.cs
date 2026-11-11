@@ -75,9 +75,19 @@ namespace BepInEx
     }
 }
 
+namespace BepInEx6Bridge
+{
+    // Calls the bridged plugins make into the stand-ins, and the time spent there (read by the bridge's diagnostics).
+    public static class BridgeStats
+    {
+        public static long LogCalls, LogTicks;
+    }
+}
+
 namespace BepInEx.Logging
 {
     using BepInEx.Core.Logging.Interpolation;
+    using BepInEx6Bridge;
     using LogLevel = BE5::BepInEx.Logging.LogLevel;
 
     // BepInEx 6's ManualLogSource: the same calls as BepInEx 5's, plus overloads taking interpolated-string handlers.
@@ -89,21 +99,29 @@ namespace BepInEx.Logging
 
         public string SourceName { get { return inner.SourceName; } }
 
-        public void Log(LogLevel level, object data) { inner.Log(level, data); }
-        public void LogFatal(object data) { inner.LogFatal(data); }
-        public void LogError(object data) { inner.LogError(data); }
-        public void LogWarning(object data) { inner.LogWarning(data); }
-        public void LogMessage(object data) { inner.LogMessage(data); }
-        public void LogInfo(object data) { inner.LogInfo(data); }
-        public void LogDebug(object data) { inner.LogDebug(data); }
+        public void Log(LogLevel level, object data) { Send(level, data); }
+        public void LogFatal(object data) { Send(LogLevel.Fatal, data); }
+        public void LogError(object data) { Send(LogLevel.Error, data); }
+        public void LogWarning(object data) { Send(LogLevel.Warning, data); }
+        public void LogMessage(object data) { Send(LogLevel.Message, data); }
+        public void LogInfo(object data) { Send(LogLevel.Info, data); }
+        public void LogDebug(object data) { Send(LogLevel.Debug, data); }
 
-        public void Log(LogLevel level, BepInExLogInterpolatedStringHandler logHandler) { inner.Log(level, logHandler.ToString()); }
-        public void LogFatal(BepInExFatalLogInterpolatedStringHandler logHandler) { inner.LogFatal(logHandler.ToString()); }
-        public void LogError(BepInExErrorLogInterpolatedStringHandler logHandler) { inner.LogError(logHandler.ToString()); }
-        public void LogWarning(BepInExWarningLogInterpolatedStringHandler logHandler) { inner.LogWarning(logHandler.ToString()); }
-        public void LogMessage(BepInExMessageLogInterpolatedStringHandler logHandler) { inner.LogMessage(logHandler.ToString()); }
-        public void LogInfo(BepInExInfoLogInterpolatedStringHandler logHandler) { inner.LogInfo(logHandler.ToString()); }
-        public void LogDebug(BepInExDebugLogInterpolatedStringHandler logHandler) { inner.LogDebug(logHandler.ToString()); }
+        public void Log(LogLevel level, BepInExLogInterpolatedStringHandler logHandler) { Send(level, logHandler.ToString()); }
+        public void LogFatal(BepInExFatalLogInterpolatedStringHandler logHandler) { Send(LogLevel.Fatal, logHandler.ToString()); }
+        public void LogError(BepInExErrorLogInterpolatedStringHandler logHandler) { Send(LogLevel.Error, logHandler.ToString()); }
+        public void LogWarning(BepInExWarningLogInterpolatedStringHandler logHandler) { Send(LogLevel.Warning, logHandler.ToString()); }
+        public void LogMessage(BepInExMessageLogInterpolatedStringHandler logHandler) { Send(LogLevel.Message, logHandler.ToString()); }
+        public void LogInfo(BepInExInfoLogInterpolatedStringHandler logHandler) { Send(LogLevel.Info, logHandler.ToString()); }
+        public void LogDebug(BepInExDebugLogInterpolatedStringHandler logHandler) { Send(LogLevel.Debug, logHandler.ToString()); }
+
+        void Send(LogLevel level, object data)
+        {
+            long t = System.Diagnostics.Stopwatch.GetTimestamp();
+            inner.Log(level, data);
+            System.Threading.Interlocked.Increment(ref BridgeStats.LogCalls);
+            System.Threading.Interlocked.Add(ref BridgeStats.LogTicks, System.Diagnostics.Stopwatch.GetTimestamp() - t);
+        }
 
         public void Dispose() { BE5::BepInEx.Logging.Logger.Sources.Remove(inner); }
     }

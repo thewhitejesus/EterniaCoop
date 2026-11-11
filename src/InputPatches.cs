@@ -23,8 +23,7 @@ namespace EterniaCoop
             Plugin.Log.LogMessage("UgxInputManager.Initialize(playerNum=" + playerNum + ") -> " + players);
             playerNum = players;
             NativePatches.Apply(players);
-            if (Settings.CoopBattle.Value && Features.CoopBattle) CoopBattleInput.Install();
-            if (Settings.PerPlayerRumble.Value && Features.Rumble) RumbleRouter.Install();
+            // The battle hooks wait until a save is loaded (Plugin.InstallBattleHooks).
             Plugin.CoopActive = true;
         }
     }

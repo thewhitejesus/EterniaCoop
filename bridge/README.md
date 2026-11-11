@@ -46,6 +46,12 @@ so other mods (e.g. Eternia Co-op's main-menu "Also running" line) can see them.
 - BepInEx 6 preloader patchers (`BepInEx\patchers`) and IL2CPP plugins are not supported (this game uses Mono).
 - Plugins are started in file order; BepInEx 6 dependency ordering is not applied.
 
+## Tracking down lag
+
+Set `Measure = true` under `[Diagnostics]` in `BepInEx\config\eterniacoop.bepinex6bridge.cfg`: every 5 seconds the
+log shows how much time the bridged plugins spend in their Unity methods (Update, LateUpdate, OnGUI...) and in calls
+through the bridge. Off by default.
+
 ## Credits
 
 Part of [Eternia Co-op](https://github.com/thewhitejesus/EterniaCoop) by thewhitejesus1, made with Claude

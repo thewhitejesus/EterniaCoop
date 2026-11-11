@@ -15,6 +15,7 @@
 // A stage whose ground isn't a regular grid is left alone, and the co-op camera then stays within the zoom that never
 // shows the band (Usable). ScissorPatch lets the picture reach the bottom of the screen.
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace EterniaCoop
@@ -168,31 +169,54 @@ namespace EterniaCoop
         static readonly int[,] cell = new int[GridSize, GridSize];
         static int bottomRow;
 
+        // Edge lookups for BuildGrid: each ground quad filed under its left, right, top and bottom edge (two corners
+        // packed into a key), with same-key quads chained in index order. Finding a neighbour is then one lookup instead
+        // of a pass over every quad (the grid is rebuilt every zoomed-out frame, from a few hundred quads).
+        static readonly Dictionary<long, int>[] byEdge = { new Dictionary<long, int>(), new Dictionary<long, int>(), new Dictionary<long, int>(), new Dictionary<long, int>() };
+        static readonly int[][] nextOnEdge = { new int[MaxQuads], new int[MaxQuads], new int[MaxQuads], new int[MaxQuads] };
+        // corners: 0 top-left, 2 top-right, 4 bottom-left, 6 bottom-right (x, y pairs). Edge e of a quad: its corners
+        // EdgeA[e] and EdgeB[e]. A neighbour in direction d shares its edge Opposite[d] with this quad's edge d.
+        static readonly int[] EdgeA = { 0, 2, 0, 4 }, EdgeB = { 4, 6, 2, 6 };   // left, right, top, bottom
+        static readonly int[] Opposite = { 1, 0, 3, 2 };
+        static readonly int[] StepCol = { -1, 1, 0, 0 }, StepRow = { 0, 0, -1, 1 };
+
+        static long EdgeKey(int quad, int e)
+        {
+            int a = quad * 8 + EdgeA[e], b = quad * 8 + EdgeB[e];
+            return (long)(ushort)corners[a] | (long)(ushort)corners[a + 1] << 16 | (long)(ushort)corners[b] << 32 | (long)(ushort)corners[b + 1] << 48;
+        }
+
         static int BuildGrid(int start)
         {
             for (int c = 0; c < GridSize; c++) for (int r = 0; r < GridSize; r++) cell[c, r] = -1;
-            for (int i = 0; i < quads; i++) gcol[i] = int.MinValue;
+            for (int e = 0; e < 4; e++) byEdge[e].Clear();
+            for (int j = quads - 1; j >= 0; j--)   // backwards, so each chain runs in index order
+            {
+                gcol[j] = int.MinValue;
+                Read(j, nb);
+                if (!IsGround(nb)) continue;
+                for (int e = 0; e < 4; e++)
+                {
+                    long key = EdgeKey(j, e);
+                    int first;
+                    nextOnEdge[e][j] = byEdge[e].TryGetValue(key, out first) ? first : -1;
+                    byEdge[e][key] = j;
+                }
+            }
             int head = 0, tail = 0, found = 0;
             gcol[start] = GridOff; grow[start] = GridOff; cell[GridOff, GridOff] = start; queue[tail++] = start;
             while (head < tail)
             {
                 int i = queue[head++];
                 found++;
-                Read(i, q);
-                for (int j = 0; j < quads; j++)
+                for (int d = 0; d < 4; d++)
                 {
-                    if (gcol[j] != int.MinValue) continue;
-                    Read(j, nb);
-                    if (!IsGround(nb)) continue;
-                    int dc, dr;
-                    // corners: 0 top-left, 2 top-right, 4 bottom-left, 6 bottom-right (x, y pairs)
-                    if (Same(nb, 0, q, 2) && Same(nb, 4, q, 6)) { dc = 1; dr = 0; }
-                    else if (Same(nb, 2, q, 0) && Same(nb, 6, q, 4)) { dc = -1; dr = 0; }
-                    else if (Same(nb, 0, q, 4) && Same(nb, 2, q, 6)) { dc = 0; dr = 1; }
-                    else if (Same(nb, 4, q, 0) && Same(nb, 6, q, 2)) { dc = 0; dr = -1; }
-                    else continue;
-                    int c = gcol[i] + dc, r = grow[i] + dr;
+                    int c = gcol[i] + StepCol[d], r = grow[i] + StepRow[d];
                     if (c < 0 || r < 0 || c >= GridSize || r >= GridSize || cell[c, r] >= 0) continue;
+                    int e = Opposite[d], j;
+                    if (!byEdge[e].TryGetValue(EdgeKey(i, d), out j)) continue;
+                    while (j >= 0 && gcol[j] != int.MinValue) j = nextOnEdge[e][j];   // first quad not placed yet
+                    if (j < 0) continue;
                     gcol[j] = c; grow[j] = r; cell[c, r] = j; queue[tail++] = j;
                 }
             }

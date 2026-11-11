@@ -1,21 +1,35 @@
 # Changelog
 
-## Unreleased
+## 1.7.0 - 2026-11-11
 - **The co-op camera keeps enemies in view too,** as far as the zoom limit leaves room around the party: the party
   always fits first, and enemies beyond the outermost player are no longer hidden past the edge of the screen.
   Setting `CoopCameraFrameEnemies` (off: party only). Thanks to TenshioftheRain for the suggestion.
+- **Six Person Battle Expansion 2.3 works alongside co-op again.** It checks the game's battle code when the game
+  starts and switched itself off (no Party Editor) because co-op had already changed two instructions there. Those
+  two now go in at the first battle, after its check. Thanks to HatsuneMikuBard for the report.
+- **Six Person Battle Expansion no longer costs a third of the frame rate** (59 FPS instead of about 34, measured on the
+  title screen). Before every read of the game's memory it asked Windows about each memory region in the range, and
+  twice a frame that range was one of the game's 50 MB texture buffers: thousands of system calls a frame. With
+  Six Person installed, co-op now answers those checks from a snapshot (the game's own data) or remembers the answer
+  for a second (the texture buffers). Nothing in Six Person itself is changed.
+- **Lighter on the CPU** (for Steam Deck, older PCs and Android): the zoomed-out ground extension finds its grid with
+  one lookup per edge instead of comparing every ground piece with every other, every frame; the title screen no
+  longer re-reads every loaded DLL's version information every 5 seconds (a frame hitch), and the controller
+  manager only looks for its character art on the title screen, every 2 seconds.
+- BepInEx 6 Bridge: an optional `[Diagnostics] Measure` setting logs how much time the bridged plugins spend in their
+  Unity methods and in calls through the bridge, for tracking down lag. (Measured with Six Person Battle Expansion
+  2.3: the bridge itself costs well under a millisecond a second.)
 - **Closing the controller manager with Esc or Enter no longer presses that key in the game** (Esc opened the menu,
   Enter confirmed): the game gets its input back once the key is let go.
 - The controller manager's plain window (used when the game's fonts aren't available) now shows the Field control row;
   it could be selected and changed there, but wasn't drawn.
 - **Gentler on the game's code (for Android and ARM devices, where battles went black):** the mod's three battle
   hooks used to rewrite the start of the hooked functions several times every battle frame. They are now written
-  once, when the game starts; so are the camera's patches, which used to go in during the first battle. The mod also
-  tells the system when it changes code, and keeps the data it updates every frame apart from code. Nothing changes
-  on a PC. Not confirmed to fix Android yet: reports welcome.
-- Small things: controller assignment is applied again if the game sets its input up a second time; the manager's
-  search for the character art slows down after a few minutes instead of running every second; the memory used to
-  find game code after an update is freed.
+  once, when a save is loaded. The mod also tells the system when it changes code, and keeps the data it updates
+  every frame apart from code. Nothing changes on a PC. Not confirmed to fix Android yet: reports welcome.
+- BepInEx 6 Bridge 1.0.2 (the diagnostics setting above).
+- Small things: controller assignment is applied again if the game sets its input up a second time; the memory used
+  to find game code after an update is freed.
 
 ## 1.6.2 - 2026-11-03
 - **Works with game version 2.1.0** (the 2 November patch). The patch added the Special Skill Shortcut buttons and

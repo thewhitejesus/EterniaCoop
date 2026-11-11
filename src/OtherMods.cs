@@ -29,11 +29,15 @@ namespace EterniaCoop
 
         static List<string> names;
         static float nextScan;
+        static int scans;
 
-        // Rescanned every few seconds while the main menu shows it: mods can finish loading after us.
+        // Scanned a few times while the main menu first shows it (mods can finish loading after us - Guests from
+        // Phantasia's DLL a few seconds later), then kept: walking every loaded module and reading version information
+        // from disk takes long enough to show as a hitch.
         public static List<string> Names(float now)
         {
-            if (names != null && now < nextScan) return names;
+            if (names != null && (now < nextScan || scans >= 4)) return names;
+            scans++;
             nextScan = now + 5f;
             var found = new List<string>();
             try

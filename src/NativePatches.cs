@@ -65,6 +65,18 @@ namespace EterniaCoop
                 foreach (string site in new[] { "LatchGuard", "RemapGuard" })
                     Native.Patch(Sites.Rva(site, 0), new byte[] { 0x3B, 0x51, 0x10 }, new byte[] { 0x83, 0xFA, 0x01 });
 
+            Plugin.Log.LogMessage("GameNative input now handles " + players + " players.");
+        }
+
+        static bool appliedLater;
+
+        // The menu and battle-results patches, once a save is loaded (Plugin.InstallBattleHooks): Six Person Battle
+        // Expansion checks those functions' bytes when the game starts and switches itself off if they differ.
+        public static void ApplyLater()
+        {
+            if (appliedLater || !applied) return;
+            appliedLater = true;
+
             // The battle-results code (FUN_84210) writes 0 (Auto) into party slots 2-4's control mode after every
             // battle: "mov byte [SlotModes+1/2/3], 0" (C6 05 disp32 00). Each 7-byte store becomes a 7-byte NOP.
             if (Settings.KeepSlotModesAfterBattle.Value && Features.KeepModes)
@@ -77,7 +89,6 @@ namespace EterniaCoop
                 }
 
             if (Settings.MenuModeTabForAll.Value && Features.MenuTab) ApplyMenuTab();
-            Plugin.Log.LogMessage("GameNative input now handles " + players + " players.");
         }
 
         static readonly byte[] Nop7 = { 0x0F, 0x1F, 0x80, 0x00, 0x00, 0x00, 0x00 };

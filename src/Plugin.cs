@@ -13,7 +13,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.6.2";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.7.0";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -38,8 +38,25 @@ namespace EterniaCoop
             if (wine != null) Log.LogInfo("Running under Wine/Proton " + wine + " (Linux or Steam Deck).");
         }
 
+        // The battle hooks (command builder, background, hits) and the menu / battle-results patches go in once a save is
+        // loaded, not when the game starts: Six Person Battle Expansion checks those functions' bytes at startup and
+        // switches itself off if they differ. In the field no battle or Skills menu code runs, so nothing is executing
+        // the code being changed. Only the input patches must be in before the game sets up its input (InputPatches).
+        static bool battleHooks;
+
+        static void InstallBattleHooks()
+        {
+            if (battleHooks || !CoopActive || Native.Base == 0 || Marshal.ReadInt32(Native.At(Rva.Area)) == 0) return;
+            battleHooks = true;
+            NativePatches.ApplyLater();
+            if (Settings.CoopBattle.Value && Features.CoopBattle) CoopBattleInput.Install();
+            if (Settings.PerPlayerRumble.Value && Features.Rumble) RumbleRouter.Install();
+        }
+
         void Update()
         {
+            InstallBattleHooks();
+            SixPersonCompat.Update();
             RumbleRouter.Update(Settings.RumbleSeconds.Value);
             if (CoopActive) WaterCompat.Update(CoopCamera.HumanPlayers >= 2);
             if (CoopActive && Players.InputManager != null && Settings.AutoAssignControllers.Value) ControllerManager.Update();
@@ -69,6 +86,8 @@ namespace EterniaCoop
             ResearchTools.Update(Config);
             RosterUnlock.Update();
             BotPlayers.Update();
+            CodeDiff.Update();
+            SixPersonCompat.Report();
 #endif
         }
 

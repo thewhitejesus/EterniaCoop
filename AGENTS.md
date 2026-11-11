@@ -92,6 +92,7 @@ src/
   BattleGround.cs     battle ground extension (zoomed-out co-op camera)
   ScissorPatch.cs     lets the battle picture reach the bottom of the screen while zoomed out
   WaterCompat.cs      Water's Edition camera hand-off
+  SixPersonCompat.cs  Six Person Battle Expansion: faster answers to its memory checks (its FPS cost)
   Debug/ResearchTools.cs   debug build only (COOP_DEBUG): memory scan, peek/poke, dumps, verbose logs
   Debug/RosterUnlock.cs    debug build only: [Debug] UnlockRoster adds every playable character to the party list (testing six-person battles)
   Debug/BotPlayers.cs     debug build only: [Debug] BotPlayers adds virtual gamepads that play battles by themselves (pinned to players 2 and 4)
@@ -168,8 +169,19 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
   function's first whole instructions move to a stub once (`Length` knows prologue instructions and refuses anything
   position-dependent; `research/check_hook_len.py` checks it against Capstone on every function, 0 wrong on 2.0.0
   and 2.1.0), MonoMod stays as the fallback. For the same audience: `Native.Write` flushes the instruction cache,
-  stub data (written every frame) sits on its own page away from stub code, and the camera / ground patches go in at
-  startup with the input hook, not at the first battle frame from inside the function they change.
+  stub data (written every frame) sits on its own page away from stub code, and the ground patches go in at startup
+  with the input hook.
+- **Six Person Battle Expansion 2.3 checks the bytes of the whole battle function (`FUN_D2C80`, its log says
+  "D2C80..D51E4") at startup** and stops ("NATIVE_DEPENDENCY_REFUSED") if anything differs - the Party Editor then
+  never appears. Our two patches inside it (`TargetSwitchCall`, `CamTargetX`) therefore go in at the first battle
+  frame (`CoopBattleInput.PatchBattleFunction`), after its check. Don't move them to startup.
+- **Six Person Battle Expansion 2.3 alone cost ~25 FPS** (59 -> 34, co-op off): `WindowsTemplateHost.NativeDataRange`
+  VirtualQuery'd every region of each checked range, twice a frame over two 50 MB texture buffers - 93% of the main
+  thread in `ZwQueryVirtualMemory`. `SixPersonCompat` (Harmony on that method) answers ranges in GameNative's image
+  from a region snapshot (2 s) and remembers other answers for 1 s: back to 59. Found with `research/sample_game.ps1`
+  (samples the main thread from outside, names ntdll functions and callers) plus the debug build's method lookup
+  (`BepInEx\cache\eterniacoop-lookup.txt`, `CodeDiff.cs`). Profile before guessing: the bridge was the first suspect
+  and cost nothing.
 - **Adding a patch, hook or data address? Add a site to `SITES` in `research/gen_sigs.py`** (for an address, any
   instruction that reaches it RIP-relative - `gn.py refs`), regenerate, and list it in its feature in `Features.cs`.
   Never hardcode an RVA in code: take it from `Sites` / `Rva`, or it won't follow a game update.
