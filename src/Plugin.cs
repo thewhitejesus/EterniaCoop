@@ -59,6 +59,7 @@ namespace EterniaCoop
             SixPersonCompat.Update();
             RumbleRouter.Update(Settings.RumbleSeconds.Value);
             if (CoopActive) WaterCompat.Update(CoopCamera.HumanPlayers >= 2);
+            Radar.Update();
             if (CoopActive && Players.InputManager != null && Settings.AutoAssignControllers.Value) ControllerManager.Update();
             // Battle menu opened or closed: hand every device to player 1 (or back) right away, not on the next tick.
             bool share = CoopActive && Settings.AutoAssignControllers.Value && Battle.MenuOpen();

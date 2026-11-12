@@ -7,7 +7,7 @@ namespace EterniaCoop
     {
         // [Coop]
         public static ConfigEntry<int> PlayerCount, KeyboardPlayer, JoinMode, FieldControl;
-        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera, CoopCameraFrameParty, CoopCameraFrameEnemies;
+        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera, CoopCameraFrameParty, CoopCameraFrameEnemies, Radar;
         public static ConfigEntry<int> CoopCameraMaxZoom;
         public static ConfigEntry<float> RumbleSeconds;
         public static ConfigEntry<string> DeviceAssignments, ManagerKey, ManagerControllerShortcut;
@@ -53,6 +53,10 @@ namespace EterniaCoop
             CoopCameraFrameEnemies = c.Bind("Coop", "CoopCameraFrameEnemies", true,
                 "Also keep enemies in view, as far as CoopCameraMaxZoom leaves room around the party (the party always " +
                 "comes first). Off: the camera frames the party only.");
+            Radar = c.Bind("Coop", "Radar", true,
+                "The PS1's battle radar, shown at the top of the screen while two or more people play (as on the PS1): the " +
+                "battlefield as a red line with the part on screen in purple, each player's number in their colour, a red E " +
+                "for each enemy (fliers higher). Characters on Auto show their slot's number dimmed.");
             CoopCameraMaxZoom = c.Bind("Coop", "CoopCameraMaxZoom", 1040,
                 "How far the co-op camera may zoom out: 512 (no zoom), 668 (the game's own farthest, same as zooming out by " +
                 "hand), 1040 (default: the whole battlefield). Past about 730 the view reaches below the battle picture; the mod " +

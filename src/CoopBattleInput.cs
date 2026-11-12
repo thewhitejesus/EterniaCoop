@@ -96,6 +96,7 @@ namespace EterniaCoop
                 SetTargetPad(IntPtr.Zero);
 
                 ControlledSlots();
+                Radar.Mark(wanted, players);
                 if (Features.Camera)
                 {
                     humans[0] = true;       // player 1's character

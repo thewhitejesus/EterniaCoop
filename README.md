@@ -24,6 +24,9 @@ per-character input slots - this mod fills them again.
   this far, so the ground ended above the bottom of the screen; the mod continues each stage's own ground there,
   in perspective and with the stage's own texture. If player 1's character is knocked out it follows the others;
   spell cameras and the battle menu's manual pan work as usual.
+- **PS1 battle radar:** while two or more play, the radar the PSP version dropped is back at the top of the screen -
+  the battlefield as a red line with the part on screen in purple, each player's number in their colour and a red E
+  for each enemy (fliers higher), placed and scaled as on the PS1.
 - **Controller manager** (F1, or hold L3 + R3): choose which controller is which player - fully usable with a
   controller, drawn in Tales of Eternia's own style with the party's artwork from your copy of the game. Any device
   can be turned off (handy for Parsec).
@@ -148,6 +151,7 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `CoopCamera` | true | With 2+ players, the battle camera follows everyone and zooms out as they spread apart. Off = the game's camera. |
 | `CoopCameraFrameParty` | true | Keep the whole party in view, AI-controlled characters too. Off = only the human players' characters. |
 | `CoopCameraFrameEnemies` | true | Also keep enemies in view, as far as the zoom limit leaves room around the party (the party always comes first). Off = party only. |
+| `Radar` | true | The PS1's battle radar at the top of the screen while two or more play. Characters on Auto show their slot's number dimmed. |
 | `CoopCameraMaxZoom` | 1040 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest, 1040 = the whole battlefield). Past about 730 the mod continues the ground below the original picture; on a stage whose ground it can't continue, the camera stops at 720. |
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |

@@ -29,7 +29,7 @@ namespace EterniaCoop
         const float LeadMax = 20f;         // look-ahead cap, PS1 pixels
         const int SnapLimit = 32;          // PS1 pixels per frame; the camera itself never moves this fast
 
-        static float ViewWidth(float z) { return 320f + 2f * (z - ZoomMin) / 3f; }
+        internal static float ViewWidth(float z) { return 320f + 2f * (z - ZoomMin) / 3f; }
         static float ZoomFor(float width) { return ZoomMin + 1.5f * (width - 320f); }
 
         public static int HumanPlayers;   // human players in the current battle (for WaterCompat)

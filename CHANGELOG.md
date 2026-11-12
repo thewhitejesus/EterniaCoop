@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+- **The PS1's battle radar is back.** While two or more people play, a thin line at the top of the screen shows the
+  whole battlefield in red with the part on screen in purple, each player's number in their colour (1 blue, 2 green,
+  3 yellow, 4 pink) and a red E for each enemy, fliers higher - the PS1's own layout, place on screen and scale, read
+  from the original game's code (the PSP version dropped it), drawn as small pixel glyphs. Characters on Auto show
+  their slot's number dimmed. Setting `Radar`. Thanks to 7RussiaSushi for the suggestion.
+
 ## 1.7.0 - 2026-11-11
 - **The co-op camera keeps enemies in view too,** as far as the zoom limit leaves room around the party: the party
   always fits first, and enemies beyond the outermost player are no longer hidden past the edge of the screen.
