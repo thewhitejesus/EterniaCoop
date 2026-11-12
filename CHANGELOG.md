@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.8.0 - 2026-11-11
 - **The PS1's battle radar is back.** While two or more people play, a thin line at the top of the screen shows the
   whole battlefield in red with the part on screen in purple, each player's number in their colour (1 blue, 2 green,
   3 yellow, 4 pink) and a red E for each enemy, fliers higher - the PS1's own layout, place on screen and scale, read
