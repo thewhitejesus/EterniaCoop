@@ -197,9 +197,7 @@ namespace EterniaCoop
                         if (block >= GlyphE) continue;
                         bool human = humans[block] && Marshal.ReadByte(a, Actor.Control) != 0;
                         int player = block < 4 ? block : -1;
-#if COOP_DEBUG
                         player = CharacterChoice.PersonOfBlock(block);   // the number and colour of whoever plays it
-#endif
                         glyph = player >= 0 ? player : block;
                         // On Auto: the slot's colour, dimmed (the player who would take it by joining).
                         color = player < 0 ? NoPlayerColor : human ? PlayerColor[player] : Color.Lerp(PlayerColor[player], Color.black, 0.45f);

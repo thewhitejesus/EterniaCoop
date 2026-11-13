@@ -13,15 +13,13 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.8.0";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.9.0";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
         float nextAssign;
-#if COOP_DEBUG
         int battleFrames;
         float battleSeen = -10f;
-#endif
         GUIStyle watermarkStyle;
 
         void Awake()
@@ -32,8 +30,8 @@ namespace EterniaCoop
             ResearchTools.Bind(Config);
             RosterUnlock.Bind(Config);
             BotPlayers.Bind(Config);
-            CharacterChoice.Bind(Config);
 #endif
+            CharacterChoice.Bind(Config);
             Compatibility.Check(Settings.StrictVersionCheck.Value);
             Players.LoadManual(Settings.DeviceAssignments.Value);
             new Harmony(Guid).PatchAll(typeof(Plugin).Assembly);
@@ -73,16 +71,11 @@ namespace EterniaCoop
                 Battle.Actors() == IntPtr.Zero ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
             // The battle menu belongs to whoever opened it (block + 1 in Rva.MenuOpener; 0 = paused with Start, no owner).
             int owner = share ? Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1 : -1;
-#if COOP_DEBUG
             if (owner >= 0) owner = CharacterChoice.InputOfBlock(owner);   // the block's input player (character choice)
-#endif
             bool changed = share != Players.ShareWithPlayer1 || field != Players.FieldPlayer || owner != Players.MenuOwner;
-#if COOP_DEBUG
             // Character choice with the leader on Auto: the menu waits until the opener has let go of the menu button.
             if (share && (!Players.ShareWithPlayer1 || owner != Players.MenuOwner)) Players.WaitRelease = true;
             if (Players.WaitRelease && (!share || !Players.AnyHeld(owner))) Players.WaitRelease = false;
-#endif
-#if COOP_DEBUG
             // Character choice swaps devices for the length of a battle: reassign the moment one starts or ends.
             // A battle runs while its input hook does: the actor list can stay set after the battle ends.
             int frames = CoopBattleInput.Frames;
@@ -91,7 +84,6 @@ namespace EterniaCoop
                 Time.unscaledTime - battleSeen < 1f;
             if (inBattle != CharacterChoice.InBattle) { CharacterChoice.InBattle = inBattle; changed = true; }
             if (CoopActive && Native.Base != 0) CoopBattleInput.LeaderAfterBattle(inBattle, Time.unscaledTime);
-#endif
             if (changed && Players.InputManager != null)
             {
                 Players.ShareWithPlayer1 = share;

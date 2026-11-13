@@ -105,9 +105,7 @@ namespace EterniaCoop
                 if (Features.Camera)
                 {
                     humans[0] = true;       // player 1's character
-#if COOP_DEBUG
                     humans[0] = !CharacterChoice.LeaderAuto;
-#endif
                     for (int b = 1; b < humans.Length; b++) humans[b] = wanted[b] && (b >= 4 || b < players);
                     CoopCamera.Update(humans);
                 }
@@ -124,20 +122,14 @@ namespace EterniaCoop
         // Command blocks the hook fills: 1-3, and Six Person's 4-5 while character choice sends someone there.
         static int Blocks()
         {
-#if COOP_DEBUG
             if (CharacterChoice.Routed) return 6;
-#endif
             return 4;
         }
 
         // The input player whose commands go into command block b: b itself, or another with character choice.
         static int InputOf(int b)
         {
-#if COOP_DEBUG
             return CharacterChoice.InputOfBlock(b);
-#else
-            return b < 4 ? b : -1;
-#endif
         }
 
         // Builds player p's pad and runs the command builder on it with p's previous state, into command block `block`
@@ -241,9 +233,7 @@ namespace EterniaCoop
             for (int i = 0; i < Rva.ActorCount; i++)
             {
                 IntPtr a = Battle.ActorAt(actors, i);
-#if COOP_DEBUG
                 if (ChosenSlot(a)) continue;
-#endif
                 int slot = Battle.PartySlot(a);
                 if (slot < 1) continue;
                 byte ctrl = Marshal.ReadByte(a, Actor.Control);
@@ -262,7 +252,6 @@ namespace EterniaCoop
             }
         }
 
-#if COOP_DEBUG
         // Character choice: a member plays as human exactly when a person picked it and their input player has a
         // device (their mode in the menu if it isn't Auto, else Semi-Auto); every other member plays on Auto. Six
         // Person's members 5-6 are put back to Auto once nobody plays them. Returns false when the choice isn't routing
@@ -325,7 +314,6 @@ namespace EterniaCoop
             wanted[block] = want != 0;
             return true;
         }
-#endif
 
         static void ClearPlayer(int p)
         {

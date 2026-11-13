@@ -73,11 +73,7 @@ namespace EterniaCoop
             int t = Marshal.ReadByte(Native.At(Rva.TargetActor));
             if (actors == IntPtr.Zero || t == 0 || t > Rva.ActorCount || Marshal.ReadByte(Native.At(Rva.MenuOpener)) != 0) return -1;
             int block = Marshal.ReadByte(ActorAt(actors, t - 1), Actor.Block);
-#if COOP_DEBUG
             return block < 6 ? block : -1;   // Six Person's 5th/6th members can be played with character choice
-#else
-            return block < 4 ? block : -1;
-#endif
         }
     }
 }

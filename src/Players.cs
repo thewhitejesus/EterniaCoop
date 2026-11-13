@@ -123,9 +123,7 @@ namespace EterniaCoop
                 if (devices[i] is Keyboard && Mouse.current != null) result[players[i]].Add(Mouse.current);
             }
             for (int i = 0; i < 4; i++) playerHasDevice[i] = result[i].Count > 0;
-#if COOP_DEBUG
             result = CharacterChoice.Apply(result);   // in battle: slot N's input player gets the devices of whoever chose slot N
-#endif
             if (ShareWithPlayer1 && MenuOwner > 0 && MenuOwner < 4 && result[MenuOwner].Count > 0)
                 result[0] = new List<InputDevice>(result[MenuOwner]);   // the owner's devices only
             else if (ShareWithPlayer1 && MenuOwner < 0)
@@ -138,7 +136,7 @@ namespace EterniaCoop
         }
 
         // Whether the player who plays party slot `slot` has a device (SlotModes). Normally player N plays slot N; the
-        // debug build's CharacterChoice can map them differently, and this follows that mapping in and out of battle so
+        // CharacterChoice can map them differently, and this follows that mapping in and out of battle so
         // the menu modes don't flip whenever a battle starts.
         static readonly bool[] playerHasDevice = { true, false, false, false };
 
@@ -146,12 +144,8 @@ namespace EterniaCoop
 
         public static bool SlotHasPlayer(int slot)
         {
-#if COOP_DEBUG
             int person = CharacterChoice.PersonOfSeat(slot);
             return person >= 0 && playerHasDevice[person];
-#else
-            return playerHasDevice[slot];
-#endif
         }
 
         // The game made its input players anew (UgxInputManager.Initialize): they listen to every device again until
@@ -171,9 +165,7 @@ namespace EterniaCoop
             }
             string key = sb.ToString();
             for (int i = 1; i < 4; i++) HasDevice[i] = want[i].Count > 0;
-#if COOP_DEBUG
             lastWant = want;
-#endif
             if (key == lastAssignment) return;
             lastAssignment = key;
 
@@ -197,7 +189,6 @@ namespace EterniaCoop
             for (int i = 1; i < 4; i++) { HasDevice[i] = true; playerHasDevice[i] = true; }
         }
 
-#if COOP_DEBUG
         public static volatile bool WaitRelease;
         static List<InputDevice>[] lastWant;
 
@@ -219,17 +210,14 @@ namespace EterniaCoop
             }
             return false;
         }
-#endif
 
         public static bool ShouldBlank(int playerNo)
         {
             if (BlockAll) return true;
-#if COOP_DEBUG
             // Character choice with nobody connected on the leader: player 1's input drives only the leader, on Auto now.
             // When the battle menu opens it gets the opener's devices, but only once they've let go of every button:
             // the menu button still held would arrive as a fresh press and close the menu again (and again).
             if (playerNo == 0 && CharacterChoice.LeaderAuto && (!ShareWithPlayer1 || WaitRelease)) return true;
-#endif
             if (playerNo < 1 || playerNo > 3) return false;
 #if COOP_DEBUG
             if (ForceBlankExtraPlayers) return true;

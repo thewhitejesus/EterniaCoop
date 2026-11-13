@@ -40,15 +40,10 @@ namespace EterniaCoop
                 IntPtr options = Marshal.ReadIntPtr(Native.At(Rva.GameOptions));
                 if (options == IntPtr.Zero || Marshal.ReadByte(options, 0x21) == 0) return;   // rumble off in the options
                 // Same priority as the game: the attacker if a party member hit, else the victim.
-#if COOP_DEBUG
                 // Character choice: the block's input player (a 5th/6th member's too), whose devices are its player's.
                 int block = attacker != IntPtr.Zero ? Battle.BlockOf(attacker) : -1;
                 if (block < 0 && victim != IntPtr.Zero) block = Battle.BlockOf(victim);
                 int slot = block == 0 ? 0 : CharacterChoice.InputOfBlock(block);
-#else
-                int slot = attacker != IntPtr.Zero ? Battle.PartySlot(attacker) : -1;
-                if (slot < 0 && victim != IntPtr.Zero) slot = Battle.PartySlot(victim);
-#endif
                 if (slot >= 1 && slot <= 3 && Players.HasDevice[slot]) pending[slot] = Strength;
             }
             catch { }

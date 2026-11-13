@@ -6,7 +6,7 @@
 //                A jumps to your own controller's row, LB/RB move your own controller, Y = automatic, B closes.
 //   Keyboard:    arrows (or W/A/S/D) the same, R = automatic, Esc / Enter close.
 //   After the devices, Field control picks who controls the field and the menus outside battle (Settings.FieldControl).
-//   Debug build: then Choose characters (Off = the standard way) and, while it's on, one row per party member: who plays it.
+//   Then Choose characters (Off = the standard way) and, while it's on, one row per party member: who plays it.
 // The game gets no input while it's open. Choices are saved per device in Settings.DeviceAssignments.
 using System.Collections.Generic;
 using UnityEngine;
@@ -308,14 +308,13 @@ namespace EterniaCoop
             Say(Name(devices, index) + (to == Players.Off ? " turned off" : " is now Player " + (to + 1)));
         }
 
-        // ---- setting rows after the devices: Field control, then (debug build) character choice ----
+        // ---- setting rows after the devices: Field control, then character choice ----
         static readonly List<int> characterSlots = new List<int>();   // party seats listed, filled by ExtraRows
         static int[] partyIds = new int[6];
 
         static int ExtraRows()
         {
             int n = 1;
-#if COOP_DEBUG
             n++;
             characterSlots.Clear();
             if (CharacterChoice.On)
@@ -325,7 +324,6 @@ namespace EterniaCoop
                 for (int s = 0; s < partyIds.Length; s++) if (partyIds[s] > 0) characterSlots.Add(s);
             }
             n += characterSlots.Count;
-#endif
             return n;
         }
 
@@ -336,12 +334,10 @@ namespace EterniaCoop
         {
             var row = new ManagerView.Row { Selected = selectedRow, NoOff = true, Labels = null };
             if (k == 0) { row.Name = "Field control"; row.Player = Mathf.Clamp(Settings.FieldControl.Value, 0, 3); return row; }
-#if COOP_DEBUG
             if (k == 1) { row.Name = "Choose characters"; row.Labels = OffOn; row.Player = CharacterChoice.On ? 0 : -1; return row; }
             int slot = characterSlots[k - 2];
             row.Name = "  " + CharacterChoice.Name(partyIds[slot], slot) + (slot == 0 ? " (leader)" : "");
             row.Player = CharacterChoice.PersonOfSeat(slot);   // -1: nobody (plays on Auto)
-#endif
             return row;
         }
 
@@ -354,7 +350,6 @@ namespace EterniaCoop
                 Say("Player " + (field + 1) + " controls the field and menus outside battle.");
                 return;
             }
-#if COOP_DEBUG
             if (k == 1)
             {
                 CharacterChoice.Toggle();
@@ -374,7 +369,6 @@ namespace EterniaCoop
                 Say(CharacterChoice.Name(partyIds[0], 0) + " (leader) has no connected player: in battle it fights on Auto.");
             }
             Players.AutoAssign(Settings.KeyboardPlayer.Value);
-#endif
         }
 
         static void Reset()

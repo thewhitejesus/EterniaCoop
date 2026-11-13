@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.0 - 2026-11-12
+- **Choose your character** (optional, off by default). Turn on *Choose characters* in the controller manager and
+  each player picks the party member they play in battle - like Symphonia's controller setup - instead of player 2
+  always playing the second member. Picking someone else's character swaps the two. Members nobody picks fight on
+  Auto, the leader too (its own mode comes back after the battle). With Six Person Battle Expansion every member is
+  listed by name in Formation order, the 5th and 6th and its add-on characters included, and can be picked. The
+  co-op camera, radar and rumble follow each player's pick; outside battle nothing changes. Settings
+  `ChooseCharacters` and `PlayerCharacters`.
+
 ## 1.8.0 - 2026-11-11
 - **The PS1's battle radar is back.** While two or more people play, a thin line at the top of the screen shows the
   whole battlefield in red with the part on screen in purple, each player's number in their colour (1 blue, 2 green,

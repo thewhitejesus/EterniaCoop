@@ -27,6 +27,11 @@ per-character input slots - this mod fills them again.
 - **PS1 battle radar:** while two or more play, the radar the PSP version dropped is back at the top of the screen -
   the battlefield as a red line with the part on screen in purple, each player's number in their colour and a red E
   for each enemy (fliers higher), placed and scaled as on the PS1.
+- **Choose your character** (optional, off by default): turn on *Choose characters* in the controller manager and
+  each player picks the party member they play in battle, instead of player 2 always playing the second member.
+  Members nobody picks fight on Auto, the leader too. With Six Person Battle Expansion the 5th and 6th members (and its
+  add-on characters) can be picked as well. The camera, radar and rumble follow each player's pick; outside battle
+  nothing changes.
 - **Controller manager** (F1, or hold L3 + R3): choose which controller is which player - fully usable with a
   controller, drawn in Tales of Eternia's own style with the party's artwork from your copy of the game. Any device
   can be turned off (handy for Parsec).
@@ -152,6 +157,8 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
 | `CoopCameraFrameParty` | true | Keep the whole party in view, AI-controlled characters too. Off = only the human players' characters. |
 | `CoopCameraFrameEnemies` | true | Also keep enemies in view, as far as the zoom limit leaves room around the party (the party always comes first). Off = party only. |
 | `Radar` | true | The PS1's battle radar at the top of the screen while two or more play. Characters on Auto show their slot's number dimmed. |
+| `ChooseCharacters` | false | Let each player pick the party member they play in battle (also in the controller manager). Off = player N plays member N. |
+| `PlayerCharacters` | (empty) | Saved by the controller manager: the party member (1-6) each player plays while `ChooseCharacters` is on, in player order. |
 | `CoopCameraMaxZoom` | 1040 | How far the co-op camera may zoom out (512 = no zoom, 668 = the game's own farthest, 1040 = the whole battlefield). Past about 730 the mod continues the ground below the original picture; on a stage whose ground it can't continue, the camera stops at 720. |
 | `ManagerKey` | F1 | Keyboard key that opens the controller manager. |
 | `ManagerControllerShortcut` | L3+R3 | Controller buttons to hold to open it: `L3+R3`, `LB+RB+Back`, `Back+Start` or `None`. |

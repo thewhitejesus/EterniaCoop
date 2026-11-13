@@ -1,4 +1,4 @@
-// Debug build only: each person picks the party member they play in battle, like Symphonia's controller setup,
+// Character choice: each person picks the party member they play in battle, like Symphonia's controller setup,
 // instead of player N always playing party seat N. With Six Person Battle Expansion the 5th and 6th members can be
 // picked too.
 //
@@ -10,7 +10,7 @@
 //   - a seat nobody picked plays on Auto.
 // Outside battle nothing moves, so player 1 keeps the field and the menus.
 //
-// [Debug] PlayerCharacters = "2,1,3,4" means player 1 plays seat 2 and player 2 plays seat 1 (the leader). Four
+// [Coop] PlayerCharacters = "2,1,3,4" means player 1 plays seat 2 and player 2 plays seat 1 (the leader). Four
 // different seat numbers 1-6, one per player; anything else is ignored. ChooseCharacters turns it on (off = standard).
 using System;
 using System.Collections.Generic;
@@ -34,12 +34,14 @@ namespace EterniaCoop
 
         public static void Bind(ConfigFile c)
         {
-            enabled = c.Bind("Debug", "ChooseCharacters", false,
-                "Let each player pick the party member they play in battle (PlayerCharacters, also set in the controller " +
-                "manager). Off = the standard way: player N plays party slot N. Debug build only.");
-            setting = c.Bind("Debug", "PlayerCharacters", "",
-                "Party seat (1-6) each player plays in battle, in player order, e.g. 2,1,3,4: player 1 plays seat 2 and " +
-                "player 2 plays the leader. Four different seats. Empty = player N plays seat N. Debug build only.");
+            enabled = c.Bind("Coop", "ChooseCharacters", false,
+                "Let each player pick the party member they play in battle (set in the controller manager: Choose characters). " +
+                "Off = the standard way: player 1 plays the leader, player 2 the second party member, and so on. Members " +
+                "nobody picks fight on Auto, the leader too.");
+            setting = c.Bind("Coop", "PlayerCharacters", "",
+                "Party member (1-6, Formation order; 5-6 with Six Person Battle Expansion) each player plays while " +
+                "ChooseCharacters is on, in player order, e.g. 2,1,3,4: player 1 plays the second member and player 2 the " +
+                "leader. Saved by the controller manager. Empty = player N plays member N.");
         }
 
         public static bool On { get { return enabled != null && enabled.Value; } }
