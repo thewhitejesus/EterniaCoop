@@ -215,7 +215,7 @@ namespace EterniaCoop
         // ("movzx edx, word [r11+rcx*2]; test edx, edx; je"): found by that code (searched every few seconds until found;
         // the address is checked on every use).
         static long sixList;
-        static float nextSearch;
+        static float nextSearch, searchWait = 5f;
         static bool? sixLoaded;
         static readonly byte[] ListRead = { 0x41, 0x0F, 0xB7, 0x14, 0x4B, 0x85, 0xD2, 0x0F, 0x84 };
 
@@ -235,8 +235,11 @@ namespace EterniaCoop
             sixList = 0;
             float now = Time.unscaledTime;
             if (now < nextSearch) return 0;
-            nextSearch = now + 5f;
+            // Each search reads a lot of memory on the main thread (a hitch): wait longer after every miss, up to a minute.
+            nextSearch = now + searchWait;
+            searchWait = Math.Min(60f, searchWait * 2f);
             sixList = Search();
+            if (sixList != 0) searchWait = 5f;
             if (sixList != 0) Plugin.Log.LogMessage("Character choice: Six Person's party list at " + sixList.ToString("X") + ".");
             return sixList;
         }
@@ -268,7 +271,7 @@ namespace EterniaCoop
         // as many short printable names as the party has members, then empty entries - and re-checked every use.
         const int NameSize = 0x40;
         static long nameTable;
-        static float nextNameSearch;
+        static float nextNameSearch, nameWait = 5f;
 
         static string SixPersonName(int seat)
         {
@@ -282,9 +285,11 @@ namespace EterniaCoop
                 nameTable = 0;
                 float now = Time.unscaledTime;
                 if (members < 2 || now < nextNameSearch) return null;
-                nextNameSearch = now + 5f;
+                nextNameSearch = now + nameWait;
+                nameWait = Math.Min(60f, nameWait * 2f);
                 nameTable = SearchNames(members, ids);
                 if (nameTable == 0) return null;
+                nameWait = 5f;
                 Plugin.Log.LogMessage("Character choice: Six Person's member names at " + nameTable.ToString("X") + ".");
             }
             return NameAt(ReadNames(nameTable), NameSize * (seat + 1));
