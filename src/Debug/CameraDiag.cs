@@ -30,7 +30,7 @@ namespace EterniaCoop
             s.Append(", zoom now ").Append(Marshal.ReadInt16(Native.At(Rva.ZoomNow)));
             s.Append(" set ").Append(Marshal.ReadInt16(Native.At(Rva.CamZoom)));
             s.Append(", ground usable ").Append(BattleGround.Usable);
-            s.Append(", players ").Append(CoopCamera.HumanPlayers);
+            s.Append(", players ").Append(CoopCamera.HumanPlayers).Append(CharacterChoice.Routed ? " (character choice)" : "");
             s.Append(", scroll ").Append(Marshal.ReadInt16(Native.At(Rva.CamScrollNow)));
             s.Append(" -> ").Append(Marshal.ReadInt16(Native.At(Rva.CamScroll)));
             s.Append(", party x");
@@ -42,6 +42,8 @@ namespace EterniaCoop
                 if (kind != 1 && kind != 2) continue;
                 s.Append(' ').Append(Marshal.ReadByte(a, Actor.Block)).Append(':').Append(Marshal.ReadInt16(a, Actor.X) / 16);
                 s.Append(kind == 2 ? "(down)" : "").Append(Battle.PartySlot(a) >= 0 ? "" : "(ai slot)");
+                int blk = Marshal.ReadByte(a, Actor.Block);
+                s.Append("[mode ").Append(Marshal.ReadByte(a, Actor.Control)).Append(", input ").Append(CharacterChoice.InputOfBlock(blk)).Append(']');
             }
             Plugin.Log.LogInfo(s.ToString());
             frames = steered = 0;

@@ -20,6 +20,15 @@ namespace EterniaCoop
             return (int)(block / Rva.CmdSize);
         }
 
+        // Command block (0-5) of a party character, Six Person's blocks 4-5 included; -1 for anything else.
+        public static int BlockOf(IntPtr actor)
+        {
+            if (actor == IntPtr.Zero || Marshal.ReadInt16(actor, Actor.Kind) != 1 || Marshal.ReadByte(actor, Actor.Side) != 0) return -1;
+            long block = Marshal.ReadIntPtr(actor, Actor.CmdBlock).ToInt64() - CmdBase();
+            if (block < 0 || block % Rva.CmdSize != 0 || block / Rva.CmdSize >= 6) return -1;
+            return (int)(block / Rva.CmdSize);
+        }
+
         public static IntPtr CmdBlock(int slot) { return new IntPtr(CmdBase() + slot * Rva.CmdSize); }
 
         // Where the command blocks are this battle: Rva.CmdBlocks in the game, but a mod may move them (Six Person
@@ -56,7 +65,7 @@ namespace EterniaCoop
                 (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0 && TargetingBlock() < 0;
         }
 
-        // The command block (0-3) of the party member choosing a target right now (holding the target button,
+        // The command block (0-5) of the party member choosing a target right now (holding the target button,
         // outside the battle menu), or -1.
         public static int TargetingBlock()
         {
@@ -64,7 +73,7 @@ namespace EterniaCoop
             int t = Marshal.ReadByte(Native.At(Rva.TargetActor));
             if (actors == IntPtr.Zero || t == 0 || t > Rva.ActorCount || Marshal.ReadByte(Native.At(Rva.MenuOpener)) != 0) return -1;
             int block = Marshal.ReadByte(ActorAt(actors, t - 1), Actor.Block);
-            return block < 4 ? block : -1;
+            return block < 6 ? block : -1;
         }
     }
 }

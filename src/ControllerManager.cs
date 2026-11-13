@@ -5,7 +5,8 @@
 //   Any controller: D-pad or left stick up/down picks a row, left/right changes its player (held: repeats),
 //                A jumps to your own controller's row, LB/RB move your own controller, Y = automatic, B closes.
 //   Keyboard:    arrows (or W/A/S/D) the same, R = automatic, Esc / Enter close.
-//   The last row, Field control, picks who controls the field and the menus outside battle (Settings.FieldControl).
+//   After the devices, Field control picks who controls the field and the menus outside battle (Settings.FieldControl).
+//   Debug build: then Choose characters (Off = the standard way) and, while it's on, one row per party member: who plays it.
 // The game gets no input while it's open. Choices are saved per device in Settings.DeviceAssignments.
 using System.Collections.Generic;
 using UnityEngine;
@@ -194,7 +195,7 @@ namespace EterniaCoop
             var devices = Players.Devices();
             if (devices.Count == 0) return;
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
-            int rows = devices.Count + 1;   // the devices, then the Field control row
+            int rows = devices.Count + ExtraRows();   // the devices, then the setting rows
             if (selected >= rows) selected = rows - 1;
             if (selected < 0) selected = 0;
             bool justOpened = Time.unscaledTime - openedAt < 0.3f;   // buttons still held from the shortcut
@@ -292,13 +293,7 @@ namespace EterniaCoop
         // Choices in order: Off, Player 1-4 (wrapping).
         static void Move(List<InputDevice> devices, int[] players, int index, int step)
         {
-            if (index >= devices.Count)   // the Field control row: Player 1-4
-            {
-                int field = (Mathf.Clamp(Settings.FieldControl.Value, 0, 3) + step + 4) % 4;
-                Settings.FieldControl.Value = field;
-                Say("Player " + (field + 1) + " controls the field and menus outside battle.");
-                return;
-            }
+            if (index >= devices.Count) { MoveExtra(index - devices.Count, step); return; }
             int from = players[index];
             int to = (from + 1 + step + 5) % 5 - 1;
             // Player 1 must keep a device: with none it would listen to every device and nobody could use the menus.
@@ -311,6 +306,75 @@ namespace EterniaCoop
             Players.SetManual(devices[index], to);
             Save();
             Say(Name(devices, index) + (to == Players.Off ? " turned off" : " is now Player " + (to + 1)));
+        }
+
+        // ---- setting rows after the devices: Field control, then (debug build) character choice ----
+        static readonly List<int> characterSlots = new List<int>();   // party seats listed, filled by ExtraRows
+        static int[] partyIds = new int[6];
+
+        static int ExtraRows()
+        {
+            int n = 1;
+#if COOP_DEBUG
+            n++;
+            characterSlots.Clear();
+            if (CharacterChoice.On)
+            {
+                // Read live: whoever joins or leaves (Keele, a Party Editor change, Six Person's 5th and 6th) shows at once.
+                partyIds = CharacterChoice.Party();
+                for (int s = 0; s < partyIds.Length; s++) if (partyIds[s] > 0) characterSlots.Add(s);
+            }
+            n += characterSlots.Count;
+#endif
+            return n;
+        }
+
+        static readonly string[] OffOn = { "Off", "On", null, null, null };
+
+        // Setting row k (0 = Field control) as the window shows it.
+        static ManagerView.Row ExtraRow(int k, bool selectedRow)
+        {
+            var row = new ManagerView.Row { Selected = selectedRow, NoOff = true, Labels = null };
+            if (k == 0) { row.Name = "Field control"; row.Player = Mathf.Clamp(Settings.FieldControl.Value, 0, 3); return row; }
+#if COOP_DEBUG
+            if (k == 1) { row.Name = "Choose characters"; row.Labels = OffOn; row.Player = CharacterChoice.On ? 0 : -1; return row; }
+            int slot = characterSlots[k - 2];
+            row.Name = "  " + CharacterChoice.Name(partyIds[slot], slot) + (slot == 0 ? " (leader)" : "");
+            row.Player = CharacterChoice.PersonOfSeat(slot);   // -1: nobody (plays on Auto)
+#endif
+            return row;
+        }
+
+        static void MoveExtra(int k, int step)
+        {
+            if (k == 0)
+            {
+                int field = (Mathf.Clamp(Settings.FieldControl.Value, 0, 3) + step + 4) % 4;
+                Settings.FieldControl.Value = field;
+                Say("Player " + (field + 1) + " controls the field and menus outside battle.");
+                return;
+            }
+#if COOP_DEBUG
+            if (k == 1)
+            {
+                CharacterChoice.Toggle();
+                Say(CharacterChoice.On ? "Each player plays the party member chosen below (in battle)." :
+                    "Standard: player 1 plays the leader, player 2 the second party member, and so on.");
+            }
+            else
+            {
+                int slot = characterSlots[k - 2];
+                int now = CharacterChoice.PersonOfSeat(slot);
+                int player = now < 0 ? (step > 0 ? 0 : 3) : (now + step + 4) % 4;
+                CharacterChoice.SetSeatPerson(slot, player);
+                Say("Player " + (player + 1) + " plays " + CharacterChoice.Name(partyIds[slot], slot) + " in battle.");
+            }
+            if (CharacterChoice.On && !CharacterChoice.LeaderReady())
+            {
+                Say(CharacterChoice.Name(partyIds[0], 0) + " (leader) has no connected player: in battle it fights on Auto.");
+            }
+            Players.AutoAssign(Settings.KeyboardPlayer.Value);
+#endif
         }
 
         static void Reset()
@@ -371,11 +435,8 @@ namespace EterniaCoop
                     Name = Name(devices, i) + (Players.IsManual(devices[i]) ? "" : "  (auto)"),
                     Player = players[i], Selected = i == selected, Active = RecentlyActive(devices[i]),
                 });
-            viewRows.Add(new ManagerView.Row
-            {
-                Name = "Field control", Player = Mathf.Clamp(Settings.FieldControl.Value, 0, 3),
-                Selected = selected == devices.Count, NoOff = true,
-            });
+            int extra = ExtraRows();
+            for (int k = 0; k < extra; k++) viewRows.Add(ExtraRow(k, selected == devices.Count + k));
             string note = ConflictNote();
             ManagerView.Show(viewRows, HintList, Footer(), note == "" ? "" : "Shortcuts changed to avoid other mods" + note,
                 message != null && Time.unscaledTime < messageUntil ? message : null);
@@ -444,7 +505,7 @@ namespace EterniaCoop
             var devices = Players.Devices();
             var players = Players.PlayerOf(devices, Settings.KeyboardPlayer.Value);
             string note = ConflictNote();
-            int rows = devices.Count + 1;   // the devices, then the Field control row
+            int rows = devices.Count + ExtraRows();   // the devices, then the setting rows
             float w = u * 46, rowH = u * 2.6f, h = u * 15.5f + rowH * rows + (note == "" ? 0 : u * 1.4f);
             var box = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
 
@@ -461,7 +522,8 @@ namespace EterniaCoop
             float pillsX = box.xMax - u * 1.5f - 5 * pillW - 4 * gap;
             for (int i = 0; i < rows; i++)
             {
-                bool field = i == devices.Count;
+                bool field = i >= devices.Count;
+                var extraRow = field ? ExtraRow(i - devices.Count, false) : new ManagerView.Row();
                 var r = new Rect(box.x + u * 1.2f, y, w - u * 2.4f, rowH - u * 0.35f);
                 bool sel = i == selected;
                 Fill(r, sel ? new Color(0.45f, 0.62f, 1f, 0.22f) : new Color(1, 1, 1, 0.04f));
@@ -469,20 +531,22 @@ namespace EterniaCoop
                 if (!field && RecentlyActive(devices[i])) Fill(new Rect(r.x, r.y, u * 0.3f, r.height), Color.white);
                 if (sel) Text(new Rect(r.x + u * 0.5f, r.y, u * 1.5f, r.height), "▶", rowText, Gold, 1);
 
-                string name = field ? "Field control" : Name(devices, i) + (Players.IsManual(devices[i]) ? "" : "  (auto)");
-                int player = field ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : players[i];
+                string name = field ? extraRow.Name : Name(devices, i) + (Players.IsManual(devices[i]) ? "" : "  (auto)");
+                int player = field ? extraRow.Player : players[i];
                 Text(new Rect(r.x + u * 2f, r.y, pillsX - r.x - u * 2.5f, r.height), name, rowText, sel ? Color.white : new Color(0.85f, 0.88f, 0.95f), 1);
 
-                // Off, P1..P4: the chosen one lit in that player's colour. (Field control has no Off.)
-                for (int k = field ? 1 : 0; k < 5; k++)
+                // Off, P1..P4: the chosen one lit in that player's colour. (Setting rows: their own choices.)
+                for (int k = 0; k < 5; k++)
                 {
                     int p = k - 1;
+                    string label = ManagerView.PillLabel(extraRow.Name != null ? extraRow : new ManagerView.Row(), k);
+                    if (label == null) continue;
                     var pr = new Rect(pillsX + k * (pillW + gap), r.y + r.height * 0.18f, pillW, r.height * 0.64f);
                     bool on = player == p;
                     Color c = p < 0 ? new Color(0.6f, 0.6f, 0.65f) : PlayerColors[p];
                     if (on) Fill(pr, new Color(c.r * 0.55f, c.g * 0.55f, c.b * 0.55f, 0.95f));
                     Frame(pr, 1, on ? c : new Color(1, 1, 1, 0.18f));
-                    Text(pr, p < 0 ? "Off" : "P" + (p + 1), pill, on ? Color.white : new Color(1, 1, 1, 0.35f), 1);
+                    Text(pr, label, pill, on ? Color.white : new Color(1, 1, 1, 0.35f), 1);
                 }
                 y += rowH;
             }

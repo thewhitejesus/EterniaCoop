@@ -57,9 +57,13 @@ namespace EterniaCoop
         const int CmdButtons = 0xC;
 
         // Runs once per battle frame, possibly on the game's own thread: no Unity API in here.
+        // Battle frames seen (paused ones too): tells a running battle from a leftover actor list after one.
+        public static volatile int Frames;
+
         static void Hook(IntPtr padHeld)
         {
             original(padHeld);   // slot 0 / player 1, exactly as the game does it
+            Frames++;
             if (inHook) return;
             inHook = true;
             try
@@ -82,15 +86,16 @@ namespace EterniaCoop
                     // Holding the target button pauses the battle too. When it's player 2-4's, their input keeps
                     // running (or the game sees the button released and ends it) and the target switch reads their pad.
                     int targeting = Battle.TargetingBlock();
-                    bool theirs = targeting > 0 && targeting < players && wanted[targeting];
+                    int targetInput = targeting > 0 ? InputOf(targeting) : -1;
+                    bool theirs = targetInput > 0 && targetInput < players && wanted[targeting];
                     int opener = Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1;   // -1: paused with Start, no owner
-                    for (int p = 1; p < 4; p++)
+                    for (int b = 1; b < Blocks(); b++)
                     {
-                        if (theirs && p == targeting) RunPlayer(obj, p);
-                        else if (p == opener) Native.Copy(Battle.CmdBlock(0), Battle.CmdBlock(p), CmdButtons);
-                        else Native.Clear(Battle.CmdBlock(p), CmdButtons);
+                        if (theirs && b == targeting) RunPlayer(obj, targetInput, b);
+                        else if (b == opener) Native.Copy(Battle.CmdBlock(0), Battle.CmdBlock(b), CmdButtons);
+                        else Native.Clear(Battle.CmdBlock(b), CmdButtons);
                     }
-                    SetTargetPad(theirs ? pads[targeting] : IntPtr.Zero);
+                    SetTargetPad(theirs ? pads[targetInput] : IntPtr.Zero);
                     return;
                 }
                 SetTargetPad(IntPtr.Zero);
@@ -100,19 +105,44 @@ namespace EterniaCoop
                 if (Features.Camera)
                 {
                     humans[0] = true;       // player 1's character
-                    for (int p = 1; p < 4; p++) humans[p] = wanted[p] && p < players;
+#if COOP_DEBUG
+                    humans[0] = !CharacterChoice.LeaderAuto;
+#endif
+                    for (int b = 1; b < humans.Length; b++) humans[b] = wanted[b] && (b >= 4 || b < players);
                     CoopCamera.Update(humans);
                 }
-                for (int p = 1; p < players && p < 4; p++)
-                    if (wanted[p]) RunPlayer(obj, p);
+                for (int b = 1; b < Blocks(); b++)
+                {
+                    int p = InputOf(b);
+                    if (wanted[b] && p > 0 && p < players && p < 4) RunPlayer(obj, p, b);
+                }
             }
             catch (Exception e) { Plugin.Log.LogError("Co-op battle input: " + e); }
             finally { inHook = false; }
         }
 
-        // Builds player p's pad and runs the command builder on it with p's previous state, into p's block; slot 0's
-        // pad and block are put back.
-        static void RunPlayer(IntPtr obj, int p)
+        // Command blocks the hook fills: 1-3, and Six Person's 4-5 while character choice sends someone there.
+        static int Blocks()
+        {
+#if COOP_DEBUG
+            if (CharacterChoice.Routed) return 6;
+#endif
+            return 4;
+        }
+
+        // The input player whose commands go into command block b: b itself, or another with character choice.
+        static int InputOf(int b)
+        {
+#if COOP_DEBUG
+            return CharacterChoice.InputOfBlock(b);
+#else
+            return b < 4 ? b : -1;
+#endif
+        }
+
+        // Builds player p's pad and runs the command builder on it with p's previous state, into command block `block`
+        // (normally p's own); slot 0's pad and block are put back.
+        static void RunPlayer(IntPtr obj, int p, int block)
         {
             IntPtr pad = Native.At(Rva.Pad), cmd0 = Battle.CmdBlock(0);
             BuildPad(obj, p);
@@ -122,7 +152,7 @@ namespace EterniaCoop
             Native.Copy(states[p], cmd0, Rva.CmdSize);
             original(pads[p]);   // reads held/pressed via the pointer, the rest via the global pad
             Native.Copy(cmd0, states[p], Rva.CmdSize);
-            Native.Copy(cmd0, Battle.CmdBlock(p), Rva.CmdSize);
+            Native.Copy(cmd0, Battle.CmdBlock(block), Rva.CmdSize);
             Native.Copy(savedCmd, cmd0, Rva.CmdSize);
             Native.Copy(savedPad, pad, Rva.PadSize);
 #if COOP_DEBUG
@@ -200,17 +230,20 @@ namespace EterniaCoop
         // Party slots whose actor is player-controlled this frame. With LiveModeSync, slots 2-4 also follow the
         // menu setting mid-battle (the battle copies modes only at its start) and go Auto while their player has
         // no controller - so a dropped Parsec guest's character keeps fighting on AI.
-        static readonly bool[] wanted = new bool[4];   // filled every frame (the hook never runs re-entrantly)
-        static readonly bool[] humans = new bool[4];   // slots the co-op camera keeps in view
+        static readonly bool[] wanted = new bool[6];   // per command block, filled every frame (the hook never runs re-entrantly)
+        static readonly bool[] humans = new bool[6];   // command blocks the co-op camera keeps in view
 
         static void ControlledSlots()
         {
-            for (int i = 0; i < 4; i++) wanted[i] = false;
+            for (int i = 0; i < wanted.Length; i++) wanted[i] = false;
             IntPtr actors = Battle.Actors();
             if (actors == IntPtr.Zero) return;
             for (int i = 0; i < Rva.ActorCount; i++)
             {
                 IntPtr a = Battle.ActorAt(actors, i);
+#if COOP_DEBUG
+                if (ChosenSlot(a)) continue;
+#endif
                 int slot = Battle.PartySlot(a);
                 if (slot < 1) continue;
                 byte ctrl = Marshal.ReadByte(a, Actor.Control);
@@ -228,6 +261,71 @@ namespace EterniaCoop
                 if (ctrl != 0) wanted[slot] = true;
             }
         }
+
+#if COOP_DEBUG
+        // Character choice: a member plays as human exactly when a person picked it and their input player has a
+        // device (their mode in the menu if it isn't Auto, else Semi-Auto); every other member plays on Auto. Six
+        // Person's members 5-6 are put back to Auto once nobody plays them. Returns false when the choice isn't routing
+        // this battle (the normal rules apply).
+        static readonly bool[] forced = new bool[6];
+        static volatile int leaderMode = -1;   // the leader's mode before character choice put it on Auto
+        static float leaderSince = -1;
+
+        // Main thread, every frame. The battle results copy every actor's mode back to the menu (FUN_84210), so a
+        // leader that ended the battle on Auto for character choice would stay on Auto: once the battle is over and
+        // that copy has written Auto, put the leader's own mode back. Given up after a minute (results never came).
+        public static void LeaderAfterBattle(bool inBattle, float now)
+        {
+            if (inBattle || leaderMode < 0) { leaderSince = -1; return; }
+            if (leaderSince < 0) leaderSince = now;
+            IntPtr menu = Native.At(Rva.SlotModes);
+            if (Marshal.ReadByte(menu) == 0)
+            {
+                Marshal.WriteByte(menu, (byte)leaderMode);
+                Plugin.Log.LogMessage("Character choice: the leader's mode is back to " + (leaderMode == 1 ? "Semi-Auto" : "mode " + leaderMode) + " after the battle.");
+                leaderMode = -1;
+            }
+            else if (now - leaderSince > 60f) leaderMode = -1;
+        }
+
+        static bool ChosenSlot(IntPtr a)
+        {
+            int block = Battle.BlockOf(a);
+            if (!CharacterChoice.Routed)
+            {
+                if (block >= 4 && forced[block]) { Marshal.WriteByte(a, Actor.Control, 0); forced[block] = false; }
+                if (block == 0 && leaderMode >= 0) { Marshal.WriteByte(a, Actor.Control, (byte)leaderMode); leaderMode = -1; }
+                return false;
+            }
+            if (block == 0)
+            {
+                // Nobody connected plays the leader: Auto until someone does (then its own mode back).
+                byte now = Marshal.ReadByte(a, Actor.Control);
+                if (CharacterChoice.LeaderAuto && now != 0 && now <= 2) { leaderMode = now; Marshal.WriteByte(a, Actor.Control, 0); }
+                else if (!CharacterChoice.LeaderAuto && leaderMode >= 0) { Marshal.WriteByte(a, Actor.Control, (byte)leaderMode); leaderMode = -1; }
+                return true;
+            }
+            if (block < 1) return true;
+            byte ctrl = Marshal.ReadByte(a, Actor.Control);
+            if (ctrl > 2) return true;
+            int p = CharacterChoice.InputOfBlock(block);
+            byte want = 0;
+            if (p > 0 && Players.HasDevice[p])
+            {
+                byte menu = block < 4 ? Marshal.ReadByte(Native.At(Rva.SlotModes + block)) : (byte)0;
+                want = menu >= 1 && menu <= 2 ? menu : (byte)1;
+            }
+            if (want != ctrl)
+            {
+                Marshal.WriteByte(a, Actor.Control, want);
+                if (want == 0) { Native.Clear(Battle.CmdBlock(block), Rva.CmdSize); if (p > 0) Native.Clear(states[p], Rva.CmdSize); }
+                else if (p > 0) { Native.Clear(pads[p], Rva.PadSize); Native.Clear(states[p], Rva.CmdSize); }
+            }
+            if (block >= 4) forced[block] = want != 0;
+            wanted[block] = want != 0;
+            return true;
+        }
+#endif
 
         static void ClearPlayer(int p)
         {

@@ -21,14 +21,14 @@ namespace EterniaCoop
     {
         // Filled by the battle input hook every running battle frame (which command blocks a person plays). The hook
         // may run off the main thread: tick tells Update whether the battle is running (it stops while paused).
-        static readonly bool[] humans = new bool[4];
+        static readonly bool[] humans = new bool[6];   // per command block (blocks 4-5: Six Person's)
         static volatile int tick;
         static int seenTick, staleFrames;
 
         public static void Mark(bool[] wanted, int players)
         {
             humans[0] = true;
-            for (int p = 1; p < 4; p++) humans[p] = wanted[p] && p < players;
+            for (int b = 1; b < 6; b++) humans[b] = wanted[b] && (b >= 4 || b < players);
             tick++;
         }
 
@@ -80,7 +80,7 @@ namespace EterniaCoop
             int t = tick;
             if (t != seenTick) { seenTick = t; staleFrames = 0; } else if (staleFrames < 99) staleFrames++;
             if (staleFrames > 3) return false;
-            if (!humans[1] && !humans[2] && !humans[3]) return false;          // the PS1: multiplayer only
+            if (!humans[1] && !humans[2] && !humans[3] && !humans[4] && !humans[5]) return false;          // the PS1: multiplayer only
             if (Marshal.ReadByte(Native.At(Rva.CamMode)) != 0) return false;   // battle intro, scripted camera
             for (int i = 0; i < Rva.ActorCount; i++)                           // won: the results screen follows
             {
@@ -195,10 +195,14 @@ namespace EterniaCoop
                     {
                         int block = Marshal.ReadByte(a, Actor.Block);
                         if (block >= GlyphE) continue;
-                        bool human = block < 4 && humans[block] && Marshal.ReadByte(a, Actor.Control) != 0;
-                        glyph = block;
+                        bool human = humans[block] && Marshal.ReadByte(a, Actor.Control) != 0;
+                        int player = block < 4 ? block : -1;
+#if COOP_DEBUG
+                        player = CharacterChoice.PersonOfBlock(block);   // the number and colour of whoever plays it
+#endif
+                        glyph = player >= 0 ? player : block;
                         // On Auto: the slot's colour, dimmed (the player who would take it by joining).
-                        color = block >= 4 ? NoPlayerColor : human ? PlayerColor[block] : Color.Lerp(PlayerColor[block], Color.black, 0.45f);
+                        color = player < 0 ? NoPlayerColor : human ? PlayerColor[player] : Color.Lerp(PlayerColor[player], Color.black, 0.45f);
                     }
                     float px = Marshal.ReadInt16(a, Actor.X) / 128f + 160f;
                     float py = 48f + (Marshal.ReadInt16(a, Actor.Y) >> 6);

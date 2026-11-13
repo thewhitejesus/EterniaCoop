@@ -25,7 +25,7 @@ namespace EterniaCoop
             {
                 int id = (int)((party >> (slot * 16)) & 0xFFFF);
                 if (id != member[slot]) { member[slot] = id; remembered[slot] = 0; }
-                bool human = id != 0 && Players.HasDevice[slot];
+                bool human = id != 0 && Players.SlotHasPlayer(slot);
                 if (!partyChanged && human == applied[slot]) continue;
                 applied[slot] = human;
                 if (id == 0) continue;

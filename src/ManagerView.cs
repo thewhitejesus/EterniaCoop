@@ -19,6 +19,14 @@ namespace EterniaCoop
             public string Name;
             public int Player;     // -1 Off, 0-3
             public bool Selected, Active, NoOff;   // NoOff: a setting row (Field control) without the Off choice
+            public string[] Labels;   // optional: the five choices' text (Off, P1-P4 otherwise); null hides a choice
+        }
+
+        // Text of choice k (0 = Off, 1-4 = P1-P4) on a row, or null when the row doesn't offer it.
+        public static string PillLabel(Row row, int k)
+        {
+            if (row.Labels != null) return row.Labels[k];
+            return k == 0 ? (row.NoOff ? null : "Off") : "P" + k;
         }
 
         static bool tried;
@@ -438,15 +446,16 @@ namespace EterniaCoop
                 for (int k = 0; k < 5; k++)
                 {
                     int p = k - 1;
-                    r.Pills[k].Rt.gameObject.SetActive(!(row.NoOff && p < 0));
-                    if (row.NoOff && p < 0) continue;
+                    string label = PillLabel(row, k);
+                    r.Pills[k].Rt.gameObject.SetActive(label != null);
+                    if (label == null) continue;
                     bool on = row.Player == p;
                     Color c = p < 0 ? new Color(0.70f, 0.72f, 0.80f) : PlayerColors[p];
                     float ph = rh * 0.70f;
                     r.Pills[k].Set(pillsX + k * (pillW + gap), (rh - ph) / 2, pillW, ph,
                         on ? new Color(c.r * 0.55f, c.g * 0.55f, c.b * 0.60f, 0.95f) : new Color(0.02f, 0.05f, 0.14f, 0.55f),
                         on ? Color.Lerp(c, Color.white, 0.35f) : new Color(SilverDim.r, SilverDim.g, SilverDim.b, 0.45f));
-                    Text(r.PillText[k], 0, 0, pillW, ph, p < 0 ? "Off" : "P" + (p + 1), on ? Color.white : new Color(1, 1, 1, 0.38f));
+                    Text(r.PillText[k], 0, 0, pillW, ph, label, on ? Color.white : new Color(1, 1, 1, 0.38f));
                 }
                 y += RowH;
             }

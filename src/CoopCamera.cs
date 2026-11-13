@@ -156,7 +156,7 @@ namespace EterniaCoop
             // only the human players' - as long as two or more people are playing. If player 1's character is down,
             // follow the others.
             int players = 0;
-            for (int p = 0; p < 4; p++) if (humanSlots[p]) players++;
+            for (int p = 0; p < humanSlots.Length; p++) if (humanSlots[p]) players++;
             HumanPlayers = players;
             bool frameParty = Settings.CoopCameraFrameParty.Value;
             int min = int.MaxValue, max = int.MinValue, humans = 0, leaderX = 0;
@@ -167,8 +167,8 @@ namespace EterniaCoop
                     IntPtr a = Battle.ActorAt(actors, i);
                     if (Marshal.ReadInt16(a, Actor.Kind) != 1 || Marshal.ReadByte(a, Actor.Side) != 0 ||
                         Marshal.ReadIntPtr(a, Actor.CmdBlock) == IntPtr.Zero) continue;
-                    int slot = Battle.PartySlot(a);   // -1: a slot past the fourth (Six Person Battle Expansion), on AI
-                    if (!frameParty && (slot < 0 || !humanSlots[slot])) continue;
+                    int slot = Battle.BlockOf(a);   // 4-5: Six Person Battle Expansion's, played by someone only with character choice
+                    if (!frameParty && (slot < 0 || slot >= humanSlots.Length || !humanSlots[slot])) continue;
                     int ax = Marshal.ReadInt16(a, Actor.X);
                     if (ax < min) min = ax;
                     if (ax > max) max = ax;
