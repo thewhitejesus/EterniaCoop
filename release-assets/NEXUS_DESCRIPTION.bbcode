@@ -1,53 +1,71 @@
 [size=5][b]Eternia Co-op[/b][/size]
+
+Click "Track" at the top of this page to get notified when there's an update.
+
 Play battles with up to 4 players, like the PS1 original. Each controller controls its own party member.
 
-[size=4][b]Install[/b][/size]
+[size=4][b]INSTALL[/b][/size]
 [list=1]
-[*]Open the game folder: Steam → right-click Tales of Eternia Remastered → Manage → Browse local files.
+[*]Open the game folder: Steam > right-click Tales of Eternia Remastered > Manage > Browse local files.
 [*]Extract the zip into that folder (BepInEx is included).
-[*]Steam Deck / Linux: in the game's Steam Properties → Launch Options, enter [i]WINEDLLOVERRIDES="winhttp=n,b" %command%[/i]
 [*]Start the game. You'll see "Eternia Co-op" in the top-right of the title screen.
 [/list]
 
-[size=4][b]How to play[/b][/size]
+[size=4][b]HOW TO PLAY[/b][/size]
 [list]
-[*]Plug in controllers - player 2 gets the 2nd character, player 3 the 3rd, and so on.
-[*]Players 2–4 control their character in battle. Menus and the field stay with player 1, like the PS1.
+[*]Plug in controllers. Player 2 gets the 2nd character, player 3 the 3rd, and so on.
+[*]Players 2-4 control their character in battle. The field and menus stay with player 1, like the PS1 (you can hand them to another player, see Field control below).
 [*]Press [b]F1[/b] (or hold [b]L3 + R3[/b] on a controller) to choose who is which player.
+[*]Want to play someone else? Turn on [b]Choose characters[/b] in the same menu (F1) and pick which party member each player controls.
 [*]To let the AI play a character again, set it to [b]Auto[/b] in the Skills menu.
-[*]Playing online? Use [b]Parsec[/b] - only the host needs the mod.
+[*]Playing online? Use [b]Parsec[/b]. Only the host needs the mod.
 [/list]
 
-[size=4][b]Features[/b][/size]
+[size=4][b]FEATURES[/b][/size]
 [list]
 [*]Up to 4 players in battle
-[*]Automatic controller setup - join or leave mid-battle
-[*]Controller manager (F1 / L3 + R3)
-[*]Semi-Auto / Auto tab for every character
+[*]Automatic controller setup, join or leave mid-battle
+[*]Choose your character (optional, off by default): turn on Choose characters in the controller manager and each player picks the party member they play in battle. Members nobody picks fight on Auto, the leader too. With Six Person Battle Expansion every member is listed by name and the 5th and 6th can be picked as well
+[*]Co-op camera: keeps the whole party in view, AI characters included, and zooms out as you spread apart, all the way out to the whole battlefield. The mod continues each stage's own ground to the bottom of the screen, so there's no empty band
+[*]Every player can open the battle menu, and it only answers to whoever opened it
+[*]Every player can switch targets (hold R1)
+[*]Controller manager (F1 / L3 + R3), fully usable with a controller, in Tales of Eternia's own style
+[*]Field control: choose which player walks the party and uses the menus outside battle
+[*]Semi-Auto / Auto tab for every character, and control modes stay set after battles
 [*]Each player's controller rumbles for their own character
+[*]PS1 battle radar: while two or more play, the radar the PSP version dropped is back at the top of the screen. It shows the whole battlefield as a line, each player's number in their colour and a red E for each enemy
 [/list]
 
-[size=4][b]Safe to use[/b][/size]
+[size=4][b]SAFE TO USE[/b][/size]
 [list]
+[*]Made for game version 2.1.0 (also runs on 2.0.0)
 [*]No internet access, tracking or telemetry
-[*]Doesn't change any game files - delete it and the game is back to normal
-[*]Works alongside other mods: it checks the game code first and skips only the parts another mod or a game update changed
+[*]Survives game updates: it finds the game code it needs by itself, and anything it can't find with certainty stays off
+[*]Doesn't change any game files. Delete it and the game is back to normal
 [*]Open source on [url=https://github.com/thewhitejesus/EterniaCoop]GitHub[/url]
 [/list]
 
-[size=4][b]Known limitations[/b][/size]
+[size=4][b]OTHER MODS[/b][/size]
 [list]
-[*]Tested with 2 players. 3–4 players and Parsec should work - feedback welcome!
-[*]A controller shows up twice? Turn off Steam Input for the game.
-[*]Works with 100% Drop and Steal Rate (the controller manager moves to F8) and Guests from Phantasia (the controller shortcut moves to LB + RB + Back; with 4 players, set ReplaceFourth=0 in ToE_Guest.ini). BepInEx 6 mods (Uncropped Backgrounds, Fast Shutdown, Font Replacer) work too, through the included BepInEx 6 Bridge: install them into BepInEx\plugins as usual, without BepInEx 6 itself.
+[*][b]100% Drop and Steal Rate:[/b] version 1.0.0 crashes battles on game version 2.1.0 (it's made for 2.0.0), with or without this mod. Remove it until it's updated. On 2.0.0 it works (the controller manager moves to F8).
+[*][b]Guests from Phantasia:[/b] works (the controller shortcut moves to LB + RB + Back; with 4 players, set ReplaceFourth=0 in ToE_Guest.ini).
+[*][b]Water's Edition:[/b] works. Its battle camera hands over to the co-op camera when two or more play. Per-player rumble is off with it installed (player 1 still gets the game's rumble).
+[*][b]Six Person Battle Expansion:[/b] works. Players 1-4 control party slots 1-4 and slots 5-6 fight on AI, or turn on Choose characters to play any of the six (its add-on characters included). (It doesn't run together with Water's Edition, because both change the same game file.)
+[*][b]BepInEx 6 mods[/b] (Uncropped Backgrounds, Fast Shutdown, Font Replacer, Analog Stick Fix, PS1 Style Arte Shortcuts, Artes and Character Renamer) work through the included BepInEx 6 Bridge: install them into BepInEx\plugins as usual, without BepInEx 6 itself.
 [/list]
 
-[size=4][b]Uninstall[/b][/size]
+[size=4][b]KNOWN LIMITATIONS[/b][/size]
+[list]
+[*]Tested with 2-3 players and over Parsec. 4 players should work, feedback welcome!
+[*]A controller shows up twice? Turn off Steam Input for the game.
+[/list]
+
+[size=4][b]UNINSTALL[/b][/size]
 Delete [i]winhttp.dll[/i], [i]doorstop_config.ini[/i], [i].doorstop_version[/i], [i]changelog.txt[/i], [i]EterniaCoop-README.md[/i] and the [i]BepInEx[/i] folder.
 
-[size=4][b]Permissions[/b][/size]
-Free to share, modify and reupload (MIT license) - just keep the credits.
+[size=4][b]PERMISSIONS[/b][/size]
+Free to share, modify and reupload (MIT license). Just keep the credits.
 
-[size=4][b]Credits[/b][/size]
-Created by thewhitejesus1 with Claude (Anthropic). Uses BepInEx, HarmonyX, UnityDoorstop and MonoMod. Inspired by EusthEnoptEron's arise-multiplayer.
+[size=4][b]CREDITS[/b][/size]
+Created by thewhitejesus1 with Claude (Anthropic). Uses BepInEx, HarmonyX, UnityDoorstop and MonoMod. Inspired by EusthEnoptEron's arise-multiplayer. The controller manager uses Font of Eternia by Jyrakos when Font Replacer by vitruvianesse is installed.
 Tales of Eternia © Bandai Namco Entertainment. Unofficial fan mod, not affiliated with Bandai Namco.
