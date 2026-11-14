@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.9.1 - 2026-11-13
+- **Fixed the results screen after a zoomed-out co-op battle.** The camera now gives the game its own zoom back the
+  moment the last enemy falls; before, the victory pose and results were drawn zoomed out, with the party small and
+  high above its shadows. A battle that ended while zoomed out no longer makes the next one start that way.
+- **Fixed flashing and striped edges when zoomed far out.** Beside the stage's own ground the mod now continues only a
+  texture pattern it can read (repeating, like the forest, or stepping through one wide texture, like the plains);
+  before, it guessed, and the guessed strips changed as the camera moved. A stage whose ground can't be continued
+  keeps the camera at the closer zoom for the whole battle instead of flipping in and out. Thanks to zarusama for the
+  report.
+
 ## 1.9.0 - 2026-11-12
 - **Choose your character** (optional, off by default). Turn on *Choose characters* in the controller manager and
   each player picks the party member they play in battle - like Symphonia's controller setup - instead of player 2

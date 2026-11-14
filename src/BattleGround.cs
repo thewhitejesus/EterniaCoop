@@ -47,9 +47,15 @@ namespace EterniaCoop
         static QuadFn drawQuad;
         static bool installed;
 
-        // False while this battle's ground couldn't be continued: the co-op camera then keeps out of the band.
+        // False once this battle's ground couldn't be continued: the co-op camera then keeps out of the band, for the
+        // rest of the battle. It must not come back mid-battle: on a stage whose ground continues at zoom 720 but not
+        // further out, "usable again" sent the camera back out, where it failed again - the picture breathed in and
+        // out and the band below the ground flashed. A few odd frames (a spell's full-screen effect) don't count.
         public static bool Usable { get { return installed && !failed; } }
-        static bool failed;
+        static volatile bool failed;
+        static int fails;
+        static long lastFrame;
+        const int FailLimit = 6;
 
         // Once, with the battle input hook (CoopBattleInput.Install). Features.Ground has checked every site.
         public static void Install()
@@ -134,15 +140,30 @@ namespace EterniaCoop
         // FUN_10D500 (battle thread), every battle frame.
         static void Hook()
         {
-            bool extend = Settings.CoopCamera.Value && Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > ZoomGameMax;
+            // A new battle (this runs every battle frame; a second without it means the last one ended): try again.
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (now - lastFrame > System.Diagnostics.Stopwatch.Frequency) 
+            {
+                failed = false; fails = 0;
+#if COOP_DEBUG
+                reported = false;
+#endif
+            }
+            lastFrame = now;
+
+            bool extend = Settings.CoopCamera.Value && !failed && Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > ZoomGameMax;
             if (!extend) { original(); return; }
             Marshal.WriteInt32(count, 0);
             Marshal.WriteByte(rec, 1);
             try { original(); }
             finally { Marshal.WriteByte(rec, 0); }
-            try { failed = !Extend(); }
-            catch (Exception e) { failed = true; why = e.Message; }
-            if (failed && why != lastWhy && logged < 20)
+            bool ok;
+            try { ok = Extend(); }
+            catch (Exception e) { ok = false; why = e.Message; }
+            if (ok) return;
+            if (++fails < FailLimit) return;
+            failed = true;
+            if (why != lastWhy && logged < 20)
             {
                 logged++;
                 lastWhy = why;
@@ -348,12 +369,22 @@ namespace EterniaCoop
             Marshal.Copy(Native.At(Rva.DrawStateB), liveB, 0, StateSize);
             Marshal.Copy(snapA, kept, 0, StateSize); Marshal.Copy(kept, 0, Native.At(Rva.DrawStateA), StateSize);
             Marshal.Copy(snapB, kept, 0, StateSize); Marshal.Copy(kept, 0, Native.At(Rva.DrawStateB), StateSize);
+            sideUnknown = false;
             try { DrawRows(maxRow, b0, b1); }
             finally
             {
                 Marshal.Copy(liveA, 0, Native.At(Rva.DrawStateA), StateSize);
                 Marshal.Copy(liveB, 0, Native.At(Rva.DrawStateB), StateSize);
             }
+#if COOP_DEBUG
+            if (!reported && (byLinear + byPeriod + byStep + unknown) > 0)
+            {
+                reported = true;
+                Plugin.Log.LogInfo("Ground extension: stage " + Marshal.ReadInt16(Native.At(Rva.Area)) + ", side columns by period " + byPeriod + " (period " + period + "), by step " + byStep + " (step " + step +
+                    "), by 256-wrap " + byLinear + ", unknown " + unknown + (sideUnknown ? " (in view)" : "") + "; " + PatternText(b0, b1));
+            }
+#endif
+            if (sideUnknown) return Fail("the ground's texture has no pattern to continue beside it (" + PatternText(b0, b1) + ")");
             return true;
         }
 
@@ -362,9 +393,23 @@ namespace EterniaCoop
         static void DrawRows(int maxRow, int b0, int b1)
         {
             int u0 = Marshal.ReadInt16(Quad(cell[b0, maxRow]), 0x6A), uw = Marshal.ReadInt16(Quad(cell[b0, maxRow]), 0x6E);
+            period = Period(b0, b1);
+            step = period > 0 ? 0 : Step(b0, b1);
+            byLinear = byPeriod = byStep = unknown = 0;
+            // What the view shows beyond the PS1's 320 pixels on each side at this zoom.
+            double beside = (CoopCamera.ViewWidth(Marshal.ReadInt16(Native.At(Rva.ZoomNow))) - 320) / 2 + 8;
             for (int c = b0 - SideColumns; c <= b1 + SideColumns; c++)
             {
                 int sc = SourceColumn(c, b0, b1, u0, uw);
+                if (sc < 0)
+                {
+                    // No telling what this column looks like. If it would be in view, the stage's ground can't be
+                    // continued sideways (Extend fails); a made-up texture there changed with every step of the camera.
+                    double ax, ay, bx, by;
+                    if (Project(c - GridOff, maxRow - GridOff + 1, out ax, out ay) && Project(c - GridOff + 1, maxRow - GridOff + 1, out bx, out by) &&
+                        Math.Max(ax, bx) > -beside && Math.Min(ax, bx) < 320 + beside) sideUnknown = true;
+                    continue;
+                }
                 int rows = 0;
                 while (maxRow - rows >= 0 && cell[sc, maxRow - rows] >= 0) rows++;
 
@@ -401,19 +446,91 @@ namespace EterniaCoop
             return Project(X, Y, out x, out y);
         }
 
-        // Which drawn column a new column takes its texture from: inside the drawn range, itself; outside, the drawn
-        // column whose texture slice continues the pattern (the ground's columns step through the texture by their
-        // width, wrapping at 256), so the extension carries on sideways without a seam.
+        // Which drawn column a new column takes its texture from: inside the drawn range, itself. Outside, by what the
+        // drawn bottom row shows: slices that repeat (Period) - the column a whole number of periods away; slices
+        // that step on steadily (Step) - the edge column with its u moved on (shiftU); else the old guess, a plain
+        // step through a 256-wide texture, if a drawn column has that slice; else -1 - unknown, and nothing is drawn
+        // there (repeating the edge column instead made stripes that changed with every step of the camera).
         static int SourceColumn(int c, int b0, int b1, int u0, int uw)
         {
+            shiftU = 0;
             if (FindRow(c) >= 0) return c;
+            if (period > 0) { byPeriod++; return b0 + (((c - b0) % period) + period) % period; }
+            if (step != 0)
+            {
+                // One wide texture laid along the battlefield, a slice per column (the plains: u 128, 160, 192...): the
+                // next columns take the next slices - the edge column's quad, its u moved on.
+                int edge = c < b0 ? b0 : b1;
+                shiftU = (c - edge) * step;
+                byStep++;
+                return edge;
+            }
             int want = (u0 + (c - b0) * uw) & 0xFF;
             for (int s = b0; s <= b1; s++)
             {
                 int r = FindRow(s);
-                if (r >= 0 && (Marshal.ReadInt16(Quad(cell[s, r]), 0x6A) & 0xFF) == want) return s;
+                if (r >= 0 && (Marshal.ReadInt16(Quad(cell[s, r]), 0x6A) & 0xFF) == want) { byLinear++; return s; }
             }
-            return c < b0 ? b0 : b1;   // no matching slice: the nearest edge column
+            unknown++;
+            return -1;
+        }
+
+        static int period, step, shiftU, byLinear, byPeriod, byStep, unknown;
+        static bool sideUnknown;
+#if COOP_DEBUG
+        static bool reported;
+#endif
+
+        // A bottom-row column's texture slice: page, u and width.
+        static long Slice(int c)
+        {
+            IntPtr quad = Quad(cell[c, bottomRow]);
+            return (long)(ushort)Marshal.ReadInt16(quad, 0x66) << 32 | (long)(ushort)Marshal.ReadInt16(quad, 0x6A) << 16 | (ushort)Marshal.ReadInt16(quad, 0x6E);
+        }
+
+        // The smallest period the drawn bottom row's slices repeat with (1: all alike), confirmed by at least two
+        // columns seen again a period later; 0: none. (The forest: u 0, 32, 64, 96 and round again - a texture 128 wide,
+        // six columns drawn.)
+        static int Period(int b0, int b1)
+        {
+            int n = b1 - b0 + 1;
+            for (int c = b0; c <= b1; c++) if (cell[c, bottomRow] < 0) return 0;
+            for (int p = 1; p <= n - 2; p++)
+            {
+                bool ok = true;
+                for (int c = b0; ok && c + p <= b1; c++) ok = Slice(c) == Slice(c + p);
+                if (ok) return p;
+            }
+            return 0;
+        }
+
+        // The slices' common step when every drawn column takes the slice right after its left neighbour's (same page,
+        // same width, u up by the width) across at least three columns; else 0.
+        static int Step(int b0, int b1)
+        {
+            if (b1 - b0 < 2) return 0;
+            for (int c = b0; c <= b1; c++) if (cell[c, bottomRow] < 0) return 0;
+            long first = Slice(b0);
+            int w = (short)(first & 0xFFFF);
+            if (w <= 0) return 0;
+            for (int c = b0; c < b1; c++)
+            {
+                long a = Slice(c), b = Slice(c + 1);
+                if ((a >> 32) != (b >> 32) || (a & 0xFFFF) != (b & 0xFFFF) || (short)((b >> 16) & 0xFFFF) - (short)((a >> 16) & 0xFFFF) != w) return 0;
+            }
+            return w;
+        }
+
+        static string PatternText(int b0, int b1)
+        {
+            var sb = new System.Text.StringBuilder("page:u+w");
+            for (int c = b0; c <= b1 && c - b0 < 16; c++)
+            {
+                if (cell[c, bottomRow] < 0) { sb.Append(" -"); continue; }
+                long k = Slice(c);
+                sb.Append(' ').Append(k >> 32).Append(':').Append((k >> 16) & 0xFFFF).Append('+').Append(k & 0xFFFF);
+            }
+            return sb.ToString();
         }
 
         static int FindRow(int c) { return c >= 0 && c < GridSize && cell[c, bottomRow] >= 0 ? bottomRow : -1; }
@@ -427,6 +544,7 @@ namespace EterniaCoop
             bool flip = s < rows;
             int src = cell[sc, bottomRow - (flip ? s : period - 1 - s)];
             Native.Copy(Quad(src), extra, PrimSize);
+            if (shiftU != 0) Marshal.WriteInt16(extra, 0x6A, (short)(Marshal.ReadInt16(extra, 0x6A) + shiftU));
             short v = Marshal.ReadInt16(extra, 0x6C), h = Marshal.ReadInt16(extra, 0x70);
             if (flip) { Marshal.WriteInt16(extra, 0x6C, (short)(v + h - 1)); Marshal.WriteInt16(extra, 0x70, (short)-(h - 1)); }
             else Marshal.WriteInt16(extra, 0x70, (short)(h - 1));

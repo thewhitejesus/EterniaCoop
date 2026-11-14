@@ -39,6 +39,7 @@ namespace EterniaCoop
         static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait, lastMid, leadVel;
         static bool tracking, resume, haveScroll;
         static short lastScroll;   // the camera's position on the previous frame
+        static short written;      // the zoom we last wrote into the game's setting (0: none / handed back)
 
         // FUN_D6420, the game's own scroll function (x -> clamped scroll), called right after CamTargetX.
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate short ScrollFn(int x);
@@ -101,6 +102,16 @@ namespace EterniaCoop
             Plugin.Log.LogMessage("Co-op camera installed.");
         }
 
+        static bool EnemyStanding(IntPtr actors)
+        {
+            for (int i = 0; i < Rva.ActorCount; i++)
+            {
+                IntPtr a = Battle.ActorAt(actors, i);
+                if (Marshal.ReadInt16(a, Actor.Kind) == 1 && Marshal.ReadByte(a, Actor.Side) != 0) return true;
+            }
+            return false;
+        }
+
         // Battle thread, every frame while the battle menu is open (the camera isn't steered then, but it still moves).
         public static void Paused() { if (installed) GuardSnap(); }
 
@@ -142,7 +153,27 @@ namespace EterniaCoop
                 tracking = false;
                 haveScroll = false;
                 Marshal.WriteByte(active, 0);
-                baseZoom = zoom = Marshal.ReadInt16(Native.At(Rva.CamZoom));
+                // The game's own zoom setting, never one we left behind: a battle that ended while we had it zoomed out
+                // (fled, or ended in a way we didn't see) must not make the next one start there.
+                short setting = Marshal.ReadInt16(Native.At(Rva.CamZoom));
+                if (written != 0 && setting == written && setting != (short)Math.Round(baseZoom))
+                {
+                    setting = (short)Math.Round(baseZoom);
+                    Marshal.WriteInt16(Native.At(Rva.CamZoom), setting);
+                }
+                written = 0;
+                baseZoom = zoom = setting;
+            }
+
+            // Won: no enemy standing. The victory pose and results screen are drawn with the zoom setting, so give the
+            // game its own zoom back at once (zoomed out, the party was drawn small and high above its shadows and the
+            // extended ground showed at the sides).
+            if (tracking && !EnemyStanding(actors))
+            {
+                Marshal.WriteByte(active, 0);
+                Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(baseZoom));
+                zoom = baseZoom; zoomVel = 0; tracking = false; resume = true; written = 0;
+                return;
             }
 
             GuardSnap();
@@ -214,7 +245,9 @@ namespace EterniaCoop
                 {
                     zoom = Spring(zoom, baseZoom, ref zoomVel, 0.5f);
                     if (Math.Abs(zoom - baseZoom) < 0.5f) { zoom = baseZoom; tracking = false; }
-                    Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(zoom));
+                    written = (short)Math.Round(zoom);
+                    Marshal.WriteInt16(Native.At(Rva.CamZoom), written);
+                    if (!tracking) written = 0;
                 }
                 return;
             }
@@ -260,7 +293,8 @@ namespace EterniaCoop
             else zoom = Spring(zoom, wantZoom, ref zoomVel, 0.9f);
             Marshal.WriteInt16(centre, (short)Math.Round(x));
             Marshal.WriteByte(active, 1);
-            Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(zoom));
+            written = (short)Math.Round(zoom);
+            Marshal.WriteInt16(Native.At(Rva.CamZoom), written);
         }
     }
 }
