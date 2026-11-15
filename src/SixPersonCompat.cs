@@ -44,7 +44,11 @@ namespace EterniaCoop
             if (done || Native.Base == 0 || Time.unscaledTime < nextTry) return;
             nextTry = Time.unscaledTime + 1f;
             if (Time.unscaledTime > 120f) { done = true; return; }
-            Type host = AccessTools.TypeByName(HostType);
+            // Only Six Person's own assembly is asked (AccessTools.TypeByName logs a HarmonyX warning for every miss,
+            // once a second for two minutes when Six Person isn't installed).
+            Type host = null;
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                if (asm.GetName().Name == "EterniaSixPersonBattle") { host = asm.GetType(HostType, false); break; }
             if (host == null) return;
             done = true;
             MethodInfo check = AccessTools.Method(host, "NativeDataRange", new[] { typeof(long), typeof(int) });

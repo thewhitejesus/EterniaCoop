@@ -177,8 +177,10 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
   Phantasia (works: the guest fights on AI in the empty slot; with a full party of 4 it replaces the 4th member,
   so with 4 players set `ReplaceFourth=0` in its `ToE_Guest.ini`). BepInEx 6 mods (**Uncropped Backgrounds,
   Fast Shutdown, Font Replacer**) work too, through the included BepInEx 6 Bridge - see below.
-- **100% Drop & Steal Rate 1.0.0** crashes battles on game version 2.1.0 (it patches fixed 2.0.0 addresses), with or
-  without this mod. Remove it until it's updated; the title screen warns while it's loaded.
+- **100% Drop & Steal Rate:** the first 1.0.0 build crashes battles on game version 2.1.0 (it patches fixed 2.0.0
+  addresses), with or without this mod; the title screen warns while that build is loaded. Later builds support 2.1.0.
+- **Uncrop 1.7+ ("Uncrop battles" on):** works. While its battle view is on, the co-op camera zooms out only as far as
+  the game itself allows (further, Uncrop's battle view no longer lines the characters up with the ground).
 - **Water's Edition:** works. Its own battle camera hands over to the co-op camera while two or more play (its
   Camera setting switches to Co-op on its own). It takes the spot per-player rumble uses, so with it installed only
   player 1 feels rumble (the game's own). It also replaces `GameNative.dll`, so the corner label says the mod adapted.

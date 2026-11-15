@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.9.2 - 2026-11-15
+- **Works with Uncrop 1.7's battle view.** With "Uncrop battles" on, zooming out past the game's own limit made
+  everyone float high above their shadows: Uncrop no longer recognised the ground as scenery. While its battle view
+  is on, the co-op camera now stays within the game's own zoom range. Thanks to zarusama for the report, logs and
+  video.
+- **No more HarmonyX warnings about Six Person** in the log when Six Person Battle Expansion isn't installed.
+- **The 100% Drop & Steal warning only shows for the build that crashes battles.** A newer build kept the version
+  number 1.0.0 but supports game 2.1.0; the mod now checks the game code itself instead of the version.
+
 ## 1.9.1 - 2026-11-13
 - **Fixed the results screen after a zoomed-out co-op battle.** The camera now gives the game its own zoom back the
   moment the last enemy falls; before, the victory pose and results were drawn zoomed out, with the party small and

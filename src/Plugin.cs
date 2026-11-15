@@ -13,7 +13,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.9.1";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.9.2";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -60,6 +60,7 @@ namespace EterniaCoop
         {
             InstallBattleHooks();
             SixPersonCompat.Update();
+            UncropCompat.Update(Time.unscaledTime);
             RumbleRouter.Update(Settings.RumbleSeconds.Value);
             if (CoopActive) WaterCompat.Update(CoopCamera.HumanPlayers >= 2);
             Radar.Update();

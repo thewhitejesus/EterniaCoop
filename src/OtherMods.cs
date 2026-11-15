@@ -110,25 +110,66 @@ namespace EterniaCoop
         static bool dropStealChecked;
         static string dropStealWarning;
 
+        // Version 1.0.0 was made for game 2.0.0 and patches its fixed addresses; on 2.1.0 one of them (0x72382) is inside
+        // the Auto handler, and battles crash. A later build kept the version number but finds its spots by code pattern.
+        // So the warning goes by what's in memory: does game code differ from the file at the old 2.0.0 spots?
+        static readonly int[] DropStealOldSpots = { 0x72382, 0x9122F, 0x91323, 0xD0E3E };
+
         public static string DropStealWarning()
         {
             if (dropStealChecked) return dropStealWarning;
             dropStealChecked = true;
             try
             {
-                if (Compatibility.Hash == null || Compatibility.Hash == DropStealBuild) return null;
+                if (Compatibility.Hash == null || Compatibility.Hash == DropStealBuild || Native.Base == 0) return null;
+                bool loaded = false;
                 foreach (var info in BepInEx.Bootstrap.Chainloader.PluginInfos.Values)
                 {
                     string file = info.Location == null ? "" : Path.GetFileNameWithoutExtension(info.Location);
-                    if (!file.Equals(DropStealFile, StringComparison.OrdinalIgnoreCase) || info.Metadata.Version.ToString() != DropStealVersion) continue;
-                    dropStealWarning = "100% Drop & Steal 1.0.0 is made for game version 2.0.0: on this version it crashes battles. " +
-                        "Remove it until it's updated.";
-                    Plugin.Log.LogWarning(dropStealWarning + " (It patches fixed 2.0.0 addresses, e.g. GameNative+0x72382.)");
-                    break;
+                    if (file.Equals(DropStealFile, StringComparison.OrdinalIgnoreCase) && info.Metadata.Version.ToString() == DropStealVersion) loaded = true;
                 }
+                if (!loaded) return null;
+                int changed = -1;
+                foreach (int rva in DropStealOldSpots) if (DiffersFromFile(rva, 8)) { changed = rva; break; }
+                if (changed < 0)
+                {
+                    Plugin.Log.LogInfo("100% Drop & Steal: it left game 2.0.0's addresses alone (a build that supports this game version).");
+                    return null;
+                }
+                dropStealWarning = "100% Drop & Steal 1.0.0 is made for game version 2.0.0: on this version it crashes battles. " +
+                    "Remove it until it's updated.";
+                Plugin.Log.LogWarning(dropStealWarning + " (It changed game 2.0.0's code at GameNative+0x" + changed.ToString("X") + ".)");
             }
             catch (Exception e) { Plugin.Log.LogWarning("Couldn't check 100% Drop & Steal: " + e.Message); }
             return dropStealWarning;
+        }
+
+        static byte[] gameFile;
+
+        // Whether GameNative's code in memory at rva differs from GameNative.dll on disk.
+        static bool DiffersFromFile(int rva, int length)
+        {
+            if (gameFile == null) gameFile = File.ReadAllBytes(Path.Combine(UnityEngine.Application.dataPath, "Plugins/x86_64/GameNative.dll"));
+            long b = Native.Base;
+            int pe = System.Runtime.InteropServices.Marshal.ReadInt32(new IntPtr(b + 0x3C));
+            int sections = System.Runtime.InteropServices.Marshal.ReadInt16(new IntPtr(b + pe + 6));
+            int optSize = System.Runtime.InteropServices.Marshal.ReadInt16(new IntPtr(b + pe + 20));
+            long table = b + pe + 24 + optSize;
+            for (int s = 0; s < sections; s++)
+            {
+                long h = table + s * 40;
+                int va = System.Runtime.InteropServices.Marshal.ReadInt32(new IntPtr(h + 12));
+                int rawSize = System.Runtime.InteropServices.Marshal.ReadInt32(new IntPtr(h + 16));
+                int raw = System.Runtime.InteropServices.Marshal.ReadInt32(new IntPtr(h + 20));
+                if (rva < va || rva + length > va + rawSize) continue;
+                int at = rva - va + raw;
+                if (at + length > gameFile.Length) return false;
+                var now = new byte[length];
+                System.Runtime.InteropServices.Marshal.Copy(Native.At(rva), now, 0, length);
+                for (int i = 0; i < length; i++) if (now[i] != gameFile[at + i]) return true;
+                return false;
+            }
+            return false;
         }
 
         static bool Contains(byte[] data, byte[] marker)
