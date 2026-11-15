@@ -213,9 +213,8 @@ namespace EterniaCoop
             float limit = Math.Max(ZoomMin, Math.Min(ZoomFullField, Settings.CoopCameraMaxZoom.Value));
             // Past ZoomNoBand the view reaches below the battle picture: only while the ground there can be continued.
             if (!BattleGround.Usable) limit = Math.Min(limit, ZoomNoBand);
-            // Uncrop's battle view rescales the scene by what it recognises as scenery; zoomed out further than the
-            // game itself goes, it no longer recognises the ground (UncropCompat).
-            if (UncropCompat.BattleView) limit = Math.Min(limit, BattleGround.ZoomGameMax);
+            // Only if Uncrop's battle view couldn't be patched to keep zoomed-out frames as battle scene (UncropCompat).
+            if (UncropCompat.LimitZoom) limit = Math.Min(limit, BattleGround.ZoomGameMax);
             if (humans >= 1 && Settings.CoopCameraFrameEnemies.Value)
             {
                 int foeMin = int.MaxValue, foeMax = int.MinValue;

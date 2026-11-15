@@ -179,8 +179,7 @@ Details in [bridge/README.md](bridge/README.md). Also available on its own (`Bep
   Fast Shutdown, Font Replacer**) work too, through the included BepInEx 6 Bridge - see below.
 - **100% Drop & Steal Rate:** the first 1.0.0 build crashes battles on game version 2.1.0 (it patches fixed 2.0.0
   addresses), with or without this mod; the title screen warns while that build is loaded. Later builds support 2.1.0.
-- **Uncrop 1.7+ ("Uncrop battles" on):** works. While its battle view is on, the co-op camera zooms out only as far as
-  the game itself allows (further, Uncrop's battle view no longer lines the characters up with the ground).
+- **Uncrop 1.7+ ("Uncrop battles" on):** works, the co-op camera zoomed all the way out included.
 - **Water's Edition:** works. Its own battle camera hands over to the co-op camera while two or more play (its
   Camera setting switches to Co-op on its own). It takes the spot per-player rumble uses, so with it installed only
   player 1 feels rumble (the game's own). It also replaces `GameNative.dll`, so the corner label says the mod adapted.

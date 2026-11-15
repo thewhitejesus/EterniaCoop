@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.3 - 2026-11-15
+- **Full co-op zoom with Uncrop's battle view.** 1.9.2 kept the camera at the game's own zoom range while "Uncrop
+  battles" was on; now it zooms out to the whole battlefield again, with everyone standing on their shadows and no
+  flicker. (Uncrop decides each frame whether it shows the battle scene by the depth characters are drawn at; zoomed
+  out, that depth drops and frames were taken for menus. The mod now keeps zoomed-out battle frames counted as scene.)
+
 ## 1.9.2 - 2026-11-15
 - **Works with Uncrop 1.7's battle view.** With "Uncrop battles" on, zooming out past the game's own limit made
   everyone float high above their shadows: Uncrop no longer recognised the ground as scenery. While its battle view

@@ -151,7 +151,7 @@ namespace EterniaCoop
             }
             lastFrame = now;
 
-            bool extend = Settings.CoopCamera.Value && !failed && !UncropCompat.BattleView && Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > ZoomGameMax;
+            bool extend = Settings.CoopCamera.Value && !failed && !UncropCompat.LimitZoom && Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > ZoomGameMax;
             if (!extend) { original(); return; }
             Marshal.WriteInt32(count, 0);
             Marshal.WriteByte(rec, 1);
