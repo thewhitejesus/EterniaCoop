@@ -67,7 +67,7 @@ namespace EterniaCoop
             catch (Exception e) { Plugin.Log.LogWarning("Water's Edition camera hand-off: " + e.Message); }
         }
 
-        // Every frame (main thread). coopPlayers: two or more players are playing.
+        // Every frame (main thread). coopPlayers: the co-op camera wants the battle (CoopCamera.Steering).
         public static void Update(bool coopPlayers)
         {
             if (Native.Base == 0) return;

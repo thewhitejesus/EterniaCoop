@@ -8,6 +8,11 @@
   were player 1-only and now read each character's own player. Thanks to zackFlame2 for the report.
 - **Fixed a crash at the end of battles** with Choose characters on and Six Person Battle Expansion not installed.
 - **Field control comes back after a battle** (it stayed with player 1's devices until the game was restarted).
+- **The co-op camera keeps the people playing on screen.** When the whole party can't fit (some stages' ground can't
+  be extended, so the camera stops at 720), it frames the characters people play instead of following a leader on
+  Auto. And when only one person still plays and it isn't the leader (Choose characters with the leader on Auto, or
+  the others down), the co-op camera follows that player instead of handing back to the game's, which follows the
+  leader.
 - **The battle menu's submenus (Formation...) no longer hand the controllers back after a second.** The battle stops
   running there, which the mod took for the battle's end; the menu then listened to the wrong player's devices.
 

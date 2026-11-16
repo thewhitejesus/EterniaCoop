@@ -32,7 +32,10 @@ namespace EterniaCoop
         internal static float ViewWidth(float z) { return 320f + 2f * (z - ZoomMin) / 3f; }
         static float ZoomFor(float width) { return ZoomMin + 1.5f * (width - 320f); }
 
-        public static int HumanPlayers;   // human players in the current battle (for WaterCompat)
+        public static int HumanPlayers;   // human players in the current battle
+        // The co-op camera wants the battle (two or more players, or one playing someone other than the leader):
+        // Water's Edition's camera hands over to it then (WaterCompat).
+        public static volatile bool Steering;
         static IntPtr stub, active, centre;   // stub data: active (byte), centre x (ushort, world units = 1/16 px)
         static bool installed;
         static long lastActors;
@@ -193,10 +196,15 @@ namespace EterniaCoop
             int players = 0;
             for (int p = 0; p < humanSlots.Length; p++) if (humanSlots[p]) players++;
             HumanPlayers = players;
+            // One player, but not on the leader (character choice left the leader on Auto, or it's someone else's
+            // seat): the game's camera would follow the leader, so the co-op camera follows that player instead.
+            bool oneOffLeader = players == 1 && humanSlots.Length > 0 && !humanSlots[0];
+            Steering = players >= 2 || oneOffLeader;
             bool frameParty = Settings.CoopCameraFrameParty.Value;
             int min = int.MaxValue, max = int.MinValue, humans = 0, leaderX = 0;
+            int hMin = int.MaxValue, hMax = int.MinValue, anchorSlot = int.MaxValue;   // the characters people play
             bool leaderUp = false;
-            if (enabled && players >= 2)
+            if (enabled && Steering)
                 for (int i = 0; i < Rva.ActorCount; i++)
                 {
                     IntPtr a = Battle.ActorAt(actors, i);
@@ -207,7 +215,15 @@ namespace EterniaCoop
                     int ax = Marshal.ReadInt16(a, Actor.X);
                     if (ax < min) min = ax;
                     if (ax > max) max = ax;
-                    if (slot == 0) { leaderX = ax; leaderUp = true; }
+                    // The anchor kept in view when not everyone fits: the first character a person plays (player 1's,
+                    // or with character choice whoever is first - not a leader left on Auto).
+                    bool played = slot >= 0 && slot < humanSlots.Length && humanSlots[slot];
+                    if (played)
+                    {
+                        if (ax < hMin) hMin = ax;
+                        if (ax > hMax) hMax = ax;
+                        if (slot < anchorSlot) { anchorSlot = slot; leaderX = ax; leaderUp = true; }
+                    }
                     humans++;
                 }
 
@@ -219,6 +235,13 @@ namespace EterniaCoop
             if (!BattleGround.Usable) limit = Math.Min(limit, ZoomNoBand);
             // Only if Uncrop's battle view couldn't be patched to keep zoomed-out frames as battle scene (UncropCompat).
             if (UncropCompat.LimitZoom) limit = Math.Min(limit, BattleGround.ZoomGameMax);
+            // The whole party doesn't fit even at the limit (e.g. a stage whose ground can't be extended): frame the
+            // characters people play (the AI ones come back once everyone fits again).
+            if (frameParty && hMin <= hMax && max - min > (ViewWidth(limit) - 2 * Edge) * 16f)
+            {
+                min = hMin; max = hMax;
+                partyMin = min; partyMax = max;
+            }
             if (humans >= 1 && Settings.CoopCameraFrameEnemies.Value)
             {
                 int foeMin = int.MaxValue, foeMax = int.MinValue;
