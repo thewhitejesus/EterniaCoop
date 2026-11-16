@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.5 - 2026-11-15
+- **Menus are no longer cut off with Uncrop's battle view.** After a zoomed-out co-op battle, menus like Skills were
+  drawn as if they were the battle - blown up and cut off at both sides - and battle submenus (Skills, Strategy,
+  Formation...) opened that way for a moment. The mod now keeps telling Uncrop "this is the battle scene" only while a
+  fight is actually on screen. Thanks to zarusama for the screenshot.
+
 ## 1.9.4 - 2026-11-15
 - **L2, R2 and L3 work for players 2-4 in battle.** The game turns buttons into its own actions in a helper the mod
   keeps to player 1 (it spun the camera otherwise), and L2/R2/L3 come from there - so players 2-4 never had them. The
