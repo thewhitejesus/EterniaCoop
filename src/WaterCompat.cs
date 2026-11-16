@@ -23,6 +23,8 @@ namespace EterniaCoop
 
         public static bool Present { get { return active != IntPtr.Zero; } }
 
+        public static void EnsureFound() { if (!searched && Native.Base != 0) Find(); }
+
         static void Find()
         {
             searched = true;
@@ -71,6 +73,9 @@ namespace EterniaCoop
             if (Native.Base == 0) return;
             if (!searched) Find();
             if (!Present) return;
+#if COOP_DEBUG
+            if (UncropProbe.SkipWaterHandoff.Value) return;
+#endif
             bool ours = Settings.CoopCamera.Value && Features.Camera;
             Marshal.WriteByte(active, (byte)(ours ? 1 : 0));
             byte m = Marshal.ReadByte(mode);

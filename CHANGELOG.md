@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.4 - 2026-11-15
+- **L2, R2 and L3 work for players 2-4 in battle.** The game turns buttons into its own actions in a helper the mod
+  keeps to player 1 (it spun the camera otherwise), and L2/R2/L3 come from there - so players 2-4 never had them. The
+  mod now does that step for players 2-4 while it builds their battle input. With Water's Edition this brings Overlimit
+  (L3, or F6 for the keyboard's player) and the Artesphere pages (L2/R2) to every player: Water's own checks for those
+  were player 1-only and now read each character's own player. Thanks to zackFlame2 for the report.
+- **Fixed a crash at the end of battles** with Choose characters on and Six Person Battle Expansion not installed.
+- **Field control comes back after a battle** (it stayed with player 1's devices until the game was restarted).
+- **The battle menu's submenus (Formation...) no longer hand the controllers back after a second.** The battle stops
+  running there, which the mod took for the battle's end; the menu then listened to the wrong player's devices.
+
 ## 1.9.3 - 2026-11-15
 - **Full co-op zoom with Uncrop's battle view.** 1.9.2 kept the camera at the game's own zoom range while "Uncrop
   battles" was on; now it zooms out to the whole battlefield again, with everyone standing on their shadows and no

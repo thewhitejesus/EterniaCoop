@@ -13,7 +13,7 @@ namespace EterniaCoop
     [BepInPlugin(Guid, Name, Version)]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.9.3";
+        public const string Guid = "eterniacoop", Name = "Eternia Co-op", Version = "1.9.4";
 
         internal static ManualLogSource Log;
         internal static volatile bool CoopActive;   // set once the native patches and hooks are in
@@ -49,6 +49,9 @@ namespace EterniaCoop
         // switches itself off if they differ. In the field no battle or Skills menu code runs, so nothing is executing
         // the code being changed. Only the input patches must be in before the game sets up its input (InputPatches).
         static bool battleHooks;
+#if COOP_DEBUG
+        static bool lastInBattleLog;
+#endif
 
         static void InstallBattleHooks()
         {
@@ -66,6 +69,8 @@ namespace EterniaCoop
             UncropCompat.Update(Time.unscaledTime);
 #if COOP_DEBUG
             UncropProbe.Update(Time.unscaledTime);
+            WaterInput.Report(Time.unscaledTime);
+            CoopBattleInput.SlicesDuringBuilder = UncropProbe.WaterSlices.Value;
 #endif
             RumbleRouter.Update(Settings.RumbleSeconds.Value);
             if (CoopActive) WaterCompat.Update(CoopCamera.HumanPlayers >= 2);
@@ -73,9 +78,27 @@ namespace EterniaCoop
             if (CoopActive && Players.InputManager != null && Settings.AutoAssignControllers.Value) ControllerManager.Update();
             // Battle menu opened or closed: hand every device to player 1 (or back) right away, not on the next tick.
             bool share = CoopActive && Settings.AutoAssignControllers.Value && Battle.MenuOpen();
+            // A battle runs while its input hook does: the actor list can stay set after the battle ends.
+            int frames = CoopBattleInput.Frames;
+            if (frames != battleFrames) { battleFrames = frames; battleSeen = Time.unscaledTime; }
+            // In some of the battle menu's submenus (Formation...) the battle frames stop: still a battle while the pause flag
+            // the last frame saw stays set. (Before, field control and character choice switched back after a second
+            // there, and the menu listened to the wrong devices.)
+            bool inBattle = CoopActive && Native.Base != 0 && Features.CoopBattle && Battle.Actors() != IntPtr.Zero &&
+                (Time.unscaledTime - battleSeen < 1f ||
+                 (CoopBattleInput.LastFramePaused && (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0));
+#if COOP_DEBUG
+            if (inBattle != lastInBattleLog)
+            {
+                lastInBattleLog = inBattle;
+                Plugin.Log.LogInfo("inBattle " + inBattle + " frames " + frames + " flags " + Marshal.ReadByte(Native.At(Rva.BattleFlags)) +
+                    " camMode " + Marshal.ReadByte(Native.At(Rva.CamMode)) + " area " + Marshal.ReadInt32(Native.At(Rva.Area)).ToString("X"));
+            }
+#endif
             // Field control: outside battle, player 1's controls go to the chosen player; back the moment a battle starts.
+            // (By the battle running, not the actor list: that stays set after a battle, which kept the field on player 1.)
             int field = CoopActive && Settings.AutoAssignControllers.Value && Features.CoopBattle && Native.Base != 0 &&
-                Battle.Actors() == IntPtr.Zero ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
+                !inBattle ? Mathf.Clamp(Settings.FieldControl.Value, 0, 3) : 0;
             // The battle menu belongs to whoever opened it (block + 1 in Rva.MenuOpener; 0 = paused with Start, no owner).
             int owner = share ? Marshal.ReadByte(Native.At(Rva.MenuOpener)) - 1 : -1;
             if (owner >= 0) owner = CharacterChoice.InputOfBlock(owner);   // the block's input player (character choice)
@@ -84,11 +107,6 @@ namespace EterniaCoop
             if (share && (!Players.ShareWithPlayer1 || owner != Players.MenuOwner)) Players.WaitRelease = true;
             if (Players.WaitRelease && (!share || !Players.AnyHeld(owner))) Players.WaitRelease = false;
             // Character choice swaps devices for the length of a battle: reassign the moment one starts or ends.
-            // A battle runs while its input hook does: the actor list can stay set after the battle ends.
-            int frames = CoopBattleInput.Frames;
-            if (frames != battleFrames) { battleFrames = frames; battleSeen = Time.unscaledTime; }
-            bool inBattle = CoopActive && Native.Base != 0 && Features.CoopBattle && Battle.Actors() != IntPtr.Zero &&
-                Time.unscaledTime - battleSeen < 1f;
             if (inBattle != CharacterChoice.InBattle) { CharacterChoice.InBattle = inBattle; changed = true; }
             if (CoopActive && Native.Base != 0) CoopBattleInput.LeaderAfterBattle(inBattle, Time.unscaledTime);
             if (changed && Players.InputManager != null)

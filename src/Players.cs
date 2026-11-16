@@ -110,6 +110,9 @@ namespace EterniaCoop
             return result;
         }
 
+        // The input player (0-3) with the keyboard, before the battle menu's sharing; -1 if none.
+        public static volatile int KeyboardInput;
+
         public static List<InputDevice>[] Desired(int keyboardPlayer)
         {
             var devices = Devices();
@@ -124,6 +127,9 @@ namespace EterniaCoop
             }
             for (int i = 0; i < 4; i++) playerHasDevice[i] = result[i].Count > 0;
             result = CharacterChoice.Apply(result);   // in battle: slot N's input player gets the devices of whoever chose slot N
+            int kb = -1;
+            for (int i = 0; i < 4 && kb < 0; i++) foreach (var d in result[i]) if (d is Keyboard) { kb = i; break; }
+            KeyboardInput = kb;
             if (ShareWithPlayer1 && MenuOwner > 0 && MenuOwner < 4 && result[MenuOwner].Count > 0)
                 result[0] = new List<InputDevice>(result[MenuOwner]);   // the owner's devices only
             else if (ShareWithPlayer1 && MenuOwner < 0)

@@ -61,6 +61,9 @@ namespace EterniaCoop
             // The per-player helpers the poll loop calls (FUN_57AA0 button latches, FUN_57F20 Switch remap) share
             // global latch flags; later players cleared player 1's and left the camera spinning. Their guard
             // "cmp edx, [rcx+0x10]" (player < count) becomes "cmp edx, 1" so they run for player 1 only.
+            // (FUN_57AA0's second half maps each player's buttons to the game's actions - L2/R2/L3 come from there;
+            // CoopBattleInput.MapButtons does that for players 2-4 while it builds their battle pad. Letting the helper
+            // run for them, even without its latch half, spun the field camera again.)
             if (Settings.HelpersPlayer0Only.Value)
                 foreach (string site in new[] { "LatchGuard", "RemapGuard" })
                     Native.Patch(Sites.Rva(site, 0), new byte[] { 0x3B, 0x51, 0x10 }, new byte[] { 0x83, 0xFA, 0x01 });

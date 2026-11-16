@@ -25,8 +25,17 @@ namespace EterniaCoop
         static readonly HashSet<string> seen = new HashSet<string>();
         static float nextLog;
 
+        public static ConfigEntry<bool> WaterSlices, SkipVictoryZoom, SkipWaterHandoff;
+
         public static void Bind(ConfigFile c)
         {
+            SkipVictoryZoom = c.Bind("Debug", "SkipVictoryZoom", false,
+                "Crash hunt (Water's Edition): don't hand the game its zoom back when the last enemy falls. Debug build only.");
+            SkipWaterHandoff = c.Bind("Debug", "SkipWaterHandoff", false,
+                "Crash hunt (Water's Edition): leave Water's camera setting alone (no switch to Co-op). Debug build only.");
+            WaterSlices = c.Bind("Debug", "InputSlicesDuringBuilder", false,
+                "Experiment for Water's Edition's Overlimit on players 2-4: keep the raw input pointed at each player while " +
+                "their battle commands are built. Read when a battle frame runs. Debug build only.");
             FullZoom = c.Bind("Debug", "UncropFullZoom", false,
                 "Let the co-op camera zoom out fully while Uncrop's battle view is on, and log how Uncrop sorts the battle's drawing. Debug build only.");
         }

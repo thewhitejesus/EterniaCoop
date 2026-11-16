@@ -29,6 +29,9 @@ namespace EterniaCoop
             return (int)(block / Rva.CmdSize);
         }
 
+        // Six command blocks exist (Six Person Battle Expansion moved them into its own memory); else the game's four.
+        public static bool SixBlocks() { return Actors() != IntPtr.Zero && CmdBase() != Native.Base + Rva.CmdBlocks; }
+
         public static IntPtr CmdBlock(int slot) { return new IntPtr(CmdBase() + slot * Rva.CmdSize); }
 
         // Where the command blocks are this battle: Rva.CmdBlocks in the game, but a mod may move them (Six Person

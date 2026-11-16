@@ -34,9 +34,11 @@ namespace EterniaCoop
             savedPad = Native.Alloc(Rva.PadSize);
             savedCmd = Native.Alloc(Rva.CmdSize);
             buildPad = (PadBuildFn)Marshal.GetDelegateForFunctionPointer(Native.At(Rva.BuildPad), typeof(PadBuildFn));
+            FindButtonMap();
 
             original = NativeHook.Install<BattleCmdFn>(Rva.BattleCommands, Hook, "Co-op battle input");
             Plugin.Log.LogMessage("Co-op battle input hooked.");
+            WaterInput.Install();
             if (Features.Camera) BattleGround.Install();   // if Features.Ground
         }
 
@@ -59,11 +61,17 @@ namespace EterniaCoop
         // Runs once per battle frame, possibly on the game's own thread: no Unity API in here.
         // Battle frames seen (paused ones too): tells a running battle from a leftover actor list after one.
         public static volatile int Frames;
+        // The last battle frame had the battle paused (menu open). Some submenus (Formation...) stop the battle frames
+        // altogether: while the pause flag is still set after such a frame, the battle is still on.
+        public static volatile bool LastFramePaused;
 
         static void Hook(IntPtr padHeld)
         {
             original(padHeld);   // slot 0 / player 1, exactly as the game does it
             Frames++;
+#if COOP_DEBUG
+            if (Frames % 600 == 1) Plugin.Log.LogInfo("Battle input hook: frame " + Frames);
+#endif
             if (inHook) return;
             inHook = true;
             try
@@ -72,6 +80,7 @@ namespace EterniaCoop
                 IntPtr obj = Marshal.ReadIntPtr(Native.At(Rva.InputObject));
                 if (obj == IntPtr.Zero) return;
                 int players = Marshal.ReadInt32(obj, 0x10);
+                if (WaterInput.Installed) WaterInput.BeginFrame(KeyboardBlock());
 
                 // Battle menu open (paused). Like the PS1, the menu belongs to whoever opened it (Rva.MenuOpener): its
                 // icon row reads the opener's command block (FUN_10F770: +8 pressed buttons/D-pad, +0 held directions),
@@ -80,7 +89,9 @@ namespace EterniaCoop
                 // the opener's devices only (Players.ShareWithPlayer1 / MenuOwner; everyone's when paused with Start),
                 // so the opener's block gets player 1's, with clean presses. No pad swapping while the menu is up; the
                 // other blocks stay empty.
-                if ((Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0)
+                bool paused = (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) != 0;
+                LastFramePaused = paused;
+                if (paused)
                 {
                     CoopCamera.Paused();
                     // Holding the target button pauses the battle too. When it's player 2-4's, their input keeps
@@ -119,10 +130,13 @@ namespace EterniaCoop
             finally { inHook = false; }
         }
 
-        // Command blocks the hook fills: 1-3, and Six Person's 4-5 while character choice sends someone there.
+        // Command blocks the hook fills: 1-3, and Six Person's 4-5 while character choice sends someone there. Only
+        // when Six Person has moved the blocks into its own six-block memory: in the game's own memory the four blocks
+        // are followed by the battle's heap pointers (0x12CFBE0...), which the battle frees when it ends - clearing
+        // "blocks 4-5" there (the paused branch) cut those pointers and the game aborted at the victory pose.
         static int Blocks()
         {
-            if (CharacterChoice.Routed) return 6;
+            if (CharacterChoice.Routed && Battle.SixBlocks()) return 6;
             return 4;
         }
 
@@ -130,6 +144,15 @@ namespace EterniaCoop
         static int InputOf(int b)
         {
             return CharacterChoice.InputOfBlock(b);
+        }
+
+        // The command block played with the keyboard (Water's Edition's F6 Overlimit), -1 if none.
+        static int KeyboardBlock()
+        {
+            int kb = Players.KeyboardInput;
+            if (kb < 0) return -1;
+            for (int b = 0; b < Blocks(); b++) if (InputOf(b) == kb) return b;
+            return -1;
         }
 
         // Builds player p's pad and runs the command builder on it with p's previous state, into command block `block`
@@ -142,7 +165,18 @@ namespace EterniaCoop
             Native.Copy(cmd0, savedCmd, Rva.CmdSize);
             Native.Copy(pads[p], pad, Rva.PadSize);
             Native.Copy(states[p], cmd0, Rva.CmdSize);
-            original(pads[p]);   // reads held/pressed via the pointer, the rest via the global pad
+            WaterInput.SetHeld(block, pads[p]);
+            // The input object's slices point at player p while the command builder runs too: code in it that reads
+            // the raw input (Water's Edition's added controls, e.g. Overlimit on L3) then reads this player's.
+            IntPtr remap = Marshal.ReadIntPtr(obj, 0x18), buttons = Marshal.ReadIntPtr(obj, 0x30), sticks = Marshal.ReadIntPtr(obj, 0x48);
+            if (SlicesDuringBuilder) PointAt(obj, p, remap, buttons, sticks);
+            try { original(pads[p]); }   // reads held/pressed via the pointer, the rest via the global pad
+            finally
+            {
+                Marshal.WriteIntPtr(obj, 0x18, remap);
+                Marshal.WriteIntPtr(obj, 0x30, buttons);
+                Marshal.WriteIntPtr(obj, 0x48, sticks);
+            }
             Native.Copy(cmd0, states[p], Rva.CmdSize);
             Native.Copy(cmd0, Battle.CmdBlock(block), Rva.CmdSize);
             Native.Copy(savedCmd, cmd0, Rva.CmdSize);
@@ -323,15 +357,87 @@ namespace EterniaCoop
         }
 
         // FUN_19DBC0 reads player 1's slice of the input object; point the three slice starts at player p for the call.
-        static void BuildPad(IntPtr obj, int p)
+        // Debug experiment (Water's Edition Overlimit for players 2-4): keep the input slices on player p while the
+        // command builder runs. Off by default until it's known not to cause the abort seen with it on.
+        public static volatile bool SlicesDuringBuilder;
+
+        static void PointAt(IntPtr obj, int p, IntPtr remap, IntPtr buttons, IntPtr sticks)
         {
-            IntPtr remap = Marshal.ReadIntPtr(obj, 0x18), buttons = Marshal.ReadIntPtr(obj, 0x30), sticks = Marshal.ReadIntPtr(obj, 0x48);
             Marshal.WriteIntPtr(obj, 0x18, new IntPtr(remap.ToInt64() + p * 0x1C * 24));
             Marshal.WriteIntPtr(obj, 0x30, new IntPtr(buttons.ToInt64() + p * 0xAE * 20));
             Marshal.WriteIntPtr(obj, 0x48, new IntPtr(sticks.ToInt64() + p * 2 * 20));
+        }
+
+        // ---- button -> action mapping for players 2-4 ----
+        // The pad builder takes L2/R2/L3 (0x40000/0x80000/0x100000) from the player's action entries in the remap
+        // table, which FUN_57AA0's second half fills from the physical buttons - for player 1 only, since the helper is
+        // kept to player 1 (its first half's global latches spin the camera; running just the second half for others
+        // spun it too). So players 2-4 had no L2/R2/L3 in battle (Water's Edition's Overlimit, Artesphere pages). While
+        // their pad is built, MapButtons fills their action entries the same way and the slice is put back after.
+        // The mapping list (pointers to {int action; vector<int> buttons}) is found from the helper's code:
+        // "imul r15d, r12d, 0xAE ; lea rbx, [list] ; lea r9, [list end]".
+        const int RemapSlice = 0x1C * 24, Buttons = 0xAE, ButtonSize = 20;
+        static long mapFirst, mapEnd;
+        static IntPtr remapSaved;
+
+        static void FindButtonMap()
+        {
+            try
+            {
+                int g = Sites.Rva("LatchGuard", 0);
+                byte[] imul = { 0x45, 0x69, 0xFC, 0xAE, 0x00, 0x00, 0x00 };
+                for (int a = g + 0x40; a < g + 0x200; a++)
+                {
+                    if (!Native.Matches(a, imul)) continue;
+                    if (!Native.Matches(a + 7, new byte[] { 0x48, 0x8D, 0x1D }) || !Native.Matches(a + 14, new byte[] { 0x4C, 0x8D, 0x0D })) break;
+                    long first = Native.Base + a + 14 + Marshal.ReadInt32(Native.At(a + 10));
+                    long end = Native.Base + a + 21 + Marshal.ReadInt32(Native.At(a + 17));
+                    if (end <= first || end - first > 64 * 8) break;
+                    mapFirst = first; mapEnd = end;
+                    remapSaved = Native.Alloc(RemapSlice);
+                    return;
+                }
+                Plugin.Log.LogInfo("Button mapping list not found: players 2-4 have no L2/R2/L3 in battle.");
+            }
+            catch (Exception e) { Plugin.Log.LogWarning("Button mapping: " + e.Message); }
+        }
+
+        static void MapButtons(IntPtr remap, IntPtr buttons)
+        {
+            for (long e = mapFirst; e < mapEnd; e += 8)
+            {
+                IntPtr o = Marshal.ReadIntPtr(new IntPtr(e));
+                if (o == IntPtr.Zero) continue;
+                int action = Marshal.ReadInt32(o);
+                if (action < 0 || action >= 0x1C) continue;
+                long b = Marshal.ReadIntPtr(o, 8).ToInt64(), bEnd = Marshal.ReadIntPtr(o, 0x10).ToInt64();
+                if (bEnd < b || bEnd - b > 64 * 4) continue;
+                byte held = 0, pressed = 0, released = 0;
+                for (long q = b; q < bEnd; q += 4)
+                {
+                    int id = Marshal.ReadInt32(new IntPtr(q));
+                    if (id < 0 || id >= Buttons) continue;
+                    IntPtr be = new IntPtr(buttons.ToInt64() + id * ButtonSize);
+                    held |= Marshal.ReadByte(be); pressed |= Marshal.ReadByte(be, 1); released |= Marshal.ReadByte(be, 2);
+                }
+                IntPtr entry = new IntPtr(remap.ToInt64() + action * 24);
+                Marshal.WriteByte(entry, 0, (byte)(held != 0 ? 1 : 0));
+                Marshal.WriteByte(entry, 1, (byte)(pressed != 0 ? 1 : 0));
+                Marshal.WriteByte(entry, 2, (byte)(released != 0 ? 1 : 0));
+            }
+        }
+
+        static void BuildPad(IntPtr obj, int p)
+        {
+            IntPtr remap = Marshal.ReadIntPtr(obj, 0x18), buttons = Marshal.ReadIntPtr(obj, 0x30), sticks = Marshal.ReadIntPtr(obj, 0x48);
+            PointAt(obj, p, remap, buttons, sticks);
+            IntPtr mine = Marshal.ReadIntPtr(obj, 0x18);
+            bool mapped = mapFirst != 0 && remapSaved != IntPtr.Zero;
+            if (mapped) { Native.Copy(mine, remapSaved, RemapSlice); MapButtons(mine, Marshal.ReadIntPtr(obj, 0x30)); }
             try { buildPad(pads[p], 1, 0); }
             finally
             {
+                if (mapped) Native.Copy(remapSaved, mine, RemapSlice);
                 Marshal.WriteIntPtr(obj, 0x18, remap);
                 Marshal.WriteIntPtr(obj, 0x30, buttons);
                 Marshal.WriteIntPtr(obj, 0x48, sticks);

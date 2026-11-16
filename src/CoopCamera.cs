@@ -168,7 +168,11 @@ namespace EterniaCoop
             // Won: no enemy standing. The victory pose and results screen are drawn with the zoom setting, so give the
             // game its own zoom back at once (zoomed out, the party was drawn small and high above its shadows and the
             // extended ground showed at the sides).
-            if (tracking && !EnemyStanding(actors))
+            bool handBack = true;
+#if COOP_DEBUG
+            handBack = !UncropProbe.SkipVictoryZoom.Value;
+#endif
+            if (handBack && tracking && !EnemyStanding(actors))
             {
                 Marshal.WriteByte(active, 0);
                 Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(baseZoom));
