@@ -7,6 +7,9 @@
   it off with `CoopCameraDuringSpells = false`. Thanks to TenshioftheRain for the report.
 - **No more green flicker at the end of a zoomed-out fight** (with Uncrop): the camera now goes straight back to the
   game's zoom when the last enemy falls, instead of easing back through the slow-motion finish.
+- **No camera whip with big parties.** When the whole party doesn't fit on screen, the camera now frames the players
+  and fits in as many AI characters as there is room for, smoothly - before, it flipped between the two as players
+  crossed the field. And when the last enemy falls, the camera no longer jumps to the leader before the victory pose.
 
 ## 1.9.5 - 2026-11-15
 - **Menus are no longer cut off with Uncrop's battle view.** After a zoomed-out co-op battle, menus like Skills were

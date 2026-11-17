@@ -50,7 +50,8 @@ namespace EterniaCoop
         // The zoom target (short) the shown zoom eases toward: the game copies the zoom setting into it in camera mode 0
         // ("mov [rip+target], ax" a few instructions after CamTargetX); spells set it themselves in their camera modes.
         static IntPtr zoomTarget;
-        static int battleFrames;   // battle frames since this battle began (its first seconds are its intro)
+        static int battleFrames;
+        static bool won;           // this battle's last enemy fell: the camera is the game's until the next battle   // battle frames since this battle began (its first seconds are its intro)
 
         // Critically damped spring (no overshoot, no snap): moves value toward target, settling in about smoothTime
         // seconds. One step per battle frame (60 fps).
@@ -164,6 +165,7 @@ namespace EterniaCoop
             {
                 lastActors = actors.ToInt64();
                 battleFrames = 0;
+                won = false;
                 tracking = false;
                 haveScroll = false;
                 Marshal.WriteByte(active, 0);
@@ -186,9 +188,12 @@ namespace EterniaCoop
 #if COOP_DEBUG
             handBack = !UncropProbe.SkipVictoryZoom.Value;
 #endif
+            if (won) return;
             if (handBack && tracking && !EnemyStanding(actors))
             {
-                Marshal.WriteByte(active, 0);
+                // The centre stays where it is (active): handing the position to the game made it jump to the leader
+                // for a moment before the victory pose. The victory's own camera (mode 2) isn't touched (won).
+                won = true;
                 Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(baseZoom));
                 // At once, not eased: the victory runs in slow motion (a few battle frames a second), so easing back
                 // left the victory zoomed out for about two seconds - drawn by Uncrop as its results screen, with the
@@ -210,7 +215,8 @@ namespace EterniaCoop
             // with CoopCameraDuringSpells the co-op camera keeps framing everyone, the spell only zooming out further.
             // Not in the battle's first 4 seconds: its intro is a scripted camera too.
             byte mode = Marshal.ReadByte(Native.At(Rva.CamMode));
-            bool spell = mode != 0 && Settings.CoopCameraDuringSpells.Value && zoomTarget != IntPtr.Zero && battleFrames > 240;
+            bool spell = mode != 0 && Settings.CoopCameraDuringSpells.Value && zoomTarget != IntPtr.Zero && battleFrames > 240 &&
+                EnemyStanding(actors);
             bool enabled = Settings.CoopCamera.Value && (mode == 0 || spell) &&
                 (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0;
             // Frame every party character still standing (kind 1), AI-controlled ones too, or with CoopCameraFrameParty off
@@ -259,10 +265,17 @@ namespace EterniaCoop
             // Only if Uncrop's battle view couldn't be patched to keep zoomed-out frames as battle scene (UncropCompat).
             if (UncropCompat.LimitZoom) limit = Math.Min(limit, BattleGround.ZoomGameMax);
             // The whole party doesn't fit even at the limit (e.g. a stage whose ground can't be extended): frame the
-            // characters people play (the AI ones come back once everyone fits again).
-            if (frameParty && hMin <= hMax && max - min > (ViewWidth(limit) - 2 * Edge) * 16f)
+            // characters people play, and the AI ones only as far as there is room.
+            // Continuous: the players first, then as much of the AI characters on either side as the room left allows (as
+            // for enemies) - switching between the two framings made the camera whip as the players crossed over.
+            float fit = (ViewWidth(limit) - 2 * Edge) * 16f;
+            if (frameParty && hMin <= hMax && max - min > fit)
             {
-                min = hMin; max = hMax;
+                float spare = Math.Max(0f, fit - (hMax - hMin));
+                float left = Math.Max(0, hMin - min), right = Math.Max(0, max - hMax);
+                float takeLeft = Math.Min(left, Math.Max(spare / 2f, spare - right));
+                float takeRight = Math.Min(right, spare - takeLeft);
+                min = hMin - (int)takeLeft; max = hMax + (int)takeRight;
                 partyMin = min; partyMax = max;
             }
             if (humans >= 1 && Settings.CoopCameraFrameEnemies.Value)
