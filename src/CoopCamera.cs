@@ -47,6 +47,10 @@ namespace EterniaCoop
         // FUN_D6420, the game's own scroll function (x -> clamped scroll), called right after CamTargetX.
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] delegate short ScrollFn(int x);
         static ScrollFn scrollFor;
+        // The zoom target (short) the shown zoom eases toward: the game copies the zoom setting into it in camera mode 0
+        // ("mov [rip+target], ax" a few instructions after CamTargetX); spells set it themselves in their camera modes.
+        static IntPtr zoomTarget;
+        static int battleFrames;   // battle frames since this battle began (its first seconds are its intro)
 
         // Critically damped spring (no overshoot, no snap): moves value toward target, settling in about smoothTime
         // seconds. One step per battle frame (60 fps).
@@ -70,6 +74,12 @@ namespace EterniaCoop
             if (!Native.Matches(site, new byte[] { 0x0F, 0xB7, 0x4C, 0x1A, 0x10 }) || Marshal.ReadByte(Native.At(site + 5)) != 0xE8)
             { Plugin.Log.LogError("Co-op camera: unexpected code, not installed"); return; }
             int scrollRva = site + 10 + Marshal.ReadInt32(Native.At(site + 6));
+            // After the call: mov [CamScroll], ax ; cmp r10b, 1 ; jae ; movzx eax, word [CamZoom] ; mov [target], ax
+            for (int a = site + 10; a < site + 0x40 && zoomTarget == IntPtr.Zero; a++)
+                if (Native.Matches(a, new byte[] { 0x0F, 0xB7, 0x05 }) && Native.Matches(a + 7, new byte[] { 0x66, 0x89, 0x05 }) &&
+                    a + 7 + Marshal.ReadInt32(Native.At(a + 3)) == Rva.CamZoom)
+                    zoomTarget = Native.At(a + 14 + Marshal.ReadInt32(Native.At(a + 10)));
+            if (zoomTarget == IntPtr.Zero) Plugin.Log.LogInfo("Co-op camera: zoom target not found; spells keep their own camera.");
             scrollFor = (ScrollFn)Marshal.GetDelegateForFunctionPointer(Native.At(scrollRva), typeof(ScrollFn));
             stub = Native.AllocNear(0x2000);
             if (stub == IntPtr.Zero) { Plugin.Log.LogError("Co-op camera: no memory near the game module"); return; }
@@ -153,6 +163,7 @@ namespace EterniaCoop
             if (actors.ToInt64() != lastActors)
             {
                 lastActors = actors.ToInt64();
+                battleFrames = 0;
                 tracking = false;
                 haveScroll = false;
                 Marshal.WriteByte(active, 0);
@@ -179,16 +190,28 @@ namespace EterniaCoop
             {
                 Marshal.WriteByte(active, 0);
                 Marshal.WriteInt16(Native.At(Rva.CamZoom), (short)Math.Round(baseZoom));
+                // At once, not eased: the victory runs in slow motion (a few battle frames a second), so easing back
+                // left the victory zoomed out for about two seconds - drawn by Uncrop as its results screen, with the
+                // ground past the picture flickering green at the sides.
+                if (zoomTarget != IntPtr.Zero) Marshal.WriteInt16(zoomTarget, (short)Math.Round(baseZoom));
+                Marshal.WriteInt16(Native.At(Rva.ZoomNow), (short)Math.Round(baseZoom));
                 zoom = baseZoom; zoomVel = 0; tracking = false; resume = true; written = 0;
                 return;
             }
 
+            battleFrames++;
             GuardSnap();
 #if COOP_DEBUG
             CameraDiag.Frame(actors, Marshal.ReadByte(active) != 0);
 #endif
 
-            bool enabled = Settings.CoopCamera.Value && Marshal.ReadByte(Native.At(Rva.CamMode)) == 0 &&
+            // A spell's or arte's own camera (mode 1: it sets the zoom; 2+: the zoom and the position). Some zoom in close on
+            // one character (Nurse, Eternal Hammer - reported by TenshioftheRain), leaving the other players off screen:
+            // with CoopCameraDuringSpells the co-op camera keeps framing everyone, the spell only zooming out further.
+            // Not in the battle's first 4 seconds: its intro is a scripted camera too.
+            byte mode = Marshal.ReadByte(Native.At(Rva.CamMode));
+            bool spell = mode != 0 && Settings.CoopCameraDuringSpells.Value && zoomTarget != IntPtr.Zero && battleFrames > 240;
+            bool enabled = Settings.CoopCamera.Value && (mode == 0 || spell) &&
                 (Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0;
             // Frame every party character still standing (kind 1), AI-controlled ones too, or with CoopCameraFrameParty off
             // only the human players' - as long as two or more people are playing. If player 1's character is down,
@@ -324,6 +347,13 @@ namespace EterniaCoop
             Marshal.WriteByte(active, 1);
             written = (short)Math.Round(zoom);
             Marshal.WriteInt16(Native.At(Rva.CamZoom), written);
+            if (spell)
+            {
+                // The game doesn't copy the setting into the zoom target in these modes, nor (2+) aim at our centre.
+                short target = Marshal.ReadInt16(zoomTarget);
+                if (target < written) Marshal.WriteInt16(zoomTarget, written);
+                if (mode >= 2 && scrollFor != null) Marshal.WriteInt16(Native.At(Rva.CamScroll), scrollFor((int)Math.Round(x) & 0xFFFF));
+            }
         }
     }
 }

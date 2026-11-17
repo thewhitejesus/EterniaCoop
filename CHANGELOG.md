@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.6 - 2026-11-17
+- **Spells no longer zoom in on one character in co-op.** Some spells and artes (Nurse, Eternal Hammer) move the
+  camera themselves and zoomed in close on player 1, leaving the other players off screen. While two or more play,
+  the co-op camera now keeps everyone in view during spell cameras; a spell that zooms out further still does. Turn
+  it off with `CoopCameraDuringSpells = false`. Thanks to TenshioftheRain for the report.
+- **No more green flicker at the end of a zoomed-out fight** (with Uncrop): the camera now goes straight back to the
+  game's zoom when the last enemy falls, instead of easing back through the slow-motion finish.
+
 ## 1.9.5 - 2026-11-15
 - **Menus are no longer cut off with Uncrop's battle view.** After a zoomed-out co-op battle, menus like Skills were
   drawn as if they were the battle - blown up and cut off at both sides - and battle submenus (Skills, Strategy,

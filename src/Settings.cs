@@ -7,7 +7,7 @@ namespace EterniaCoop
     {
         // [Coop]
         public static ConfigEntry<int> PlayerCount, KeyboardPlayer, JoinMode, FieldControl;
-        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera, CoopCameraFrameParty, CoopCameraFrameEnemies, Radar;
+        public static ConfigEntry<bool> AutoAssignControllers, KeepSlotModesAfterBattle, MenuModeTabForAll, LiveModeSync, CoopBattle, PerPlayerRumble, CoopCamera, CoopCameraFrameParty, CoopCameraFrameEnemies, CoopCameraDuringSpells, Radar;
         public static ConfigEntry<int> CoopCameraMaxZoom;
         public static ConfigEntry<float> RumbleSeconds;
         public static ConfigEntry<string> DeviceAssignments, ManagerKey, ManagerControllerShortcut;
@@ -53,6 +53,10 @@ namespace EterniaCoop
             CoopCameraFrameEnemies = c.Bind("Coop", "CoopCameraFrameEnemies", true,
                 "Also keep enemies in view, as far as CoopCameraMaxZoom leaves room around the party (the party always " +
                 "comes first). Off: the camera frames the party only.");
+            CoopCameraDuringSpells = c.Bind("Coop", "CoopCameraDuringSpells", true,
+                "Keep everyone in view while spells and artes play their own camera (some, like Nurse or Eternal Hammer, " +
+                "zoom in close on one character); a spell that zooms out further still does. Off: spells move the camera " +
+                "as in the single-player game.");
             Radar = c.Bind("Coop", "Radar", true,
                 "The PS1's battle radar, shown at the top of the screen while two or more people play (as on the PS1): the " +
                 "battlefield as a red line with the part on screen in purple, each player's number in their colour, a red E " +
