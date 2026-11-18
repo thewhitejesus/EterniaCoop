@@ -208,8 +208,9 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
   +8 EXP to next level, +0x34 max HP, +0x38 HP, +0x3A max TP, +0x3E TP; +0x7A the learned artes as a zero-ended list of
   arte ids (the Skills screen counts its non-zero bytes when it opens). Arte ids follow Artes Renamer's config order:
   Reid 0x01-0x18, Farah 0x19-0x2A, Craymel artes from 0x36 (Nurse 0x37, Spread 0x47), Ras 0x66-0x69, Chat 0x6A-0x6F
-  (Eternal Throw 0x6F; Six Person shows Chat's list by its own count, so adding to it didn't show). Huge EXP in memory
-  makes the next win run the game's own level-ups. "Retry Battle" restores the records from before the fight. Nurse
+  (Eternal Throw 0x6F; Six Person shows Chat's list by its own count, so adding to it didn't show). EXP in memory makes
+  the next win run the game's own level-ups; the cap is level 250 at 20,000,000 EXP (no per-level table: a formula).
+  Debug build: `[Debug] MaxLevels`, `UnlockArtes`, `ExtraArtes` (hex ids per character) do this outside battle. "Retry Battle" restores the records from before the fight. Nurse
   and other spell cameras are camera mode 2 for ~0.4 s. Debug build: `[Debug] HealParty` refills HP/TP outside battle;
   bots also press L3/L2/R2 (Water's Overlimit/Artesphere).
 - **When a battle crashes, read the crash dump before blaming the mod** (`%TEMP%BANDAI NAMCO Entertainment...Crashes`,
