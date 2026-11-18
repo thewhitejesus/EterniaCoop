@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.9.8 - 2026-11-18
 - **Big spells no longer cut the co-op camera's zoom for the rest of the battle.** Screen-filling spells (Meteor Swarm,
   and others with their own camera) hide the stage's ground while they play; the ground extension counted every one of
   those frames as "this stage can't be extended" and, after six, kept the camera at zoom 720 until the battle ended.
