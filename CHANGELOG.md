@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- **Big spells no longer cut the co-op camera's zoom for the rest of the battle.** Screen-filling spells (Meteor Swarm,
+  and others with their own camera) hide the stage's ground while they play; the ground extension counted every one of
+  those frames as "this stage can't be extended" and, after six, kept the camera at zoom 720 until the battle ended.
+  Frames under a spell's camera no longer count, and only failures in a row do.
+
 ## 1.9.7 - 2026-11-18
 - **The co-op camera works in every battle again, not just the first.** 1.9.6 hands the camera back to the game when
   the last enemy falls (for a clean victory screen), and it only took it back when it saw a new battle - but the game

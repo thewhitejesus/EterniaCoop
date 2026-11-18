@@ -8,7 +8,8 @@
 // shown in the menu), +0x7A the learned artes: a zero-ended list of arte ids, 0x20 bytes (+0x9A is the next field).
 // [Debug] MaxLevels = true gives every character the EXP cap (20,000,000: level 250): the next battle won runs the game's own
 // level-ups (stats included). [Debug] UnlockArtes = true adds each character's artes to their list: Reid 0x01-0x18,
-// Farah 0x19-0x2A, the Craymel artes (0x36-0x65, in Artes Renamer's order) split between Keele (water, wind, fire, then
+// Farah 0x19-0x2A, the Craymel artes (0x36-0x5F, in Artes Renamer's order up to Distortion; 0x60-0x65 are Max's artes,
+// then Spark Wave 0x70 and Prism Sword 0x71; Fear Flare, Maelstrom, Summon Demon and Shining Flare not found) split between Keele (water, wind, fire, then
 // light, dark and the top spells) and Meredy (healing and support, then earth, ice, lightning), Ras 0x66-0x69, Chat
 // 0x6A-0x6F (Six Person counts seats 5-6 itself, so Chat's may not show). [Debug] ExtraArtes adds hex ids per
 // character ("1=70,71;4=37") for artes outside those ranges. All in memory: saving the game afterwards keeps it.
@@ -37,7 +38,7 @@ namespace EterniaCoop
             heal = c.Bind("Debug", "HealParty", false, "Outside battle, refill every character's HP and TP (in memory). Debug build only.");
             maxLevels = c.Bind("Debug", "MaxLevels", false, "Give every character EXP for the level cap; the next battle won levels them up (in memory - saving keeps it). Debug build only.");
             artes = c.Bind("Debug", "UnlockArtes", false, "Teach every character all their artes and spells (in memory - saving keeps it). Debug build only.");
-            extraArtes = c.Bind("Debug", "ExtraArtes", "", "With UnlockArtes: more hex arte ids per character id, e.g. 1=70,71;4=37 (1 Reid, 2 Farah, 3 Keele, 4 Meredy, 5 Ras, 6 Chat).");
+            extraArtes = c.Bind("Debug", "ExtraArtes", "", "With UnlockArtes: more hex arte ids per character id, e.g. 1=70,71;4=37 (1 Reid, 2 Farah, 3 Keele, 4 Meredy, 5 Ras, 6 Chat). An id that is no arte crashes the Skills screen (0x7E/0x7F did).");
         }
 
         public static void Update()
@@ -135,7 +136,8 @@ namespace EterniaCoop
             AddRange(lists[1], 0x01, 0x18);
             AddRange(lists[2], 0x19, 0x2A);
             AddRange(lists[3], craymel + 16, craymel + 24);   // Aqua Edge .. Explode
-            AddRange(lists[3], craymel + 35, craymel + 47);   // Ray .. Shining Flare
+            AddRange(lists[3], craymel + 35, craymel + 41);   // Ray .. Distortion (0x60-0x65 are Max's artes)
+            AddRange(lists[3], 0x70, 0x71);                   // Spark Wave, Prism Sword (0x72-0x7D: dormant Craymel artes)
             AddRange(lists[4], craymel + 0, craymel + 15);    // Heal .. Delay
             AddRange(lists[4], craymel + 25, craymel + 34);   // Grave .. Indignation
             AddRange(lists[5], 0x66, 0x69);

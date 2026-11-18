@@ -50,7 +50,7 @@ namespace EterniaCoop
         // False once this battle's ground couldn't be continued: the co-op camera then keeps out of the band, for the
         // rest of the battle. It must not come back mid-battle: on a stage whose ground continues at zoom 720 but not
         // further out, "usable again" sent the camera back out, where it failed again - the picture breathed in and
-        // out and the band below the ground flashed. A few odd frames (a spell's full-screen effect) don't count.
+        // out and the band below the ground flashed. A few odd frames don't count, nor any while a spell's camera plays.
         public static bool Usable { get { return installed && !failed; } }
         static volatile bool failed;
         static int fails;
@@ -160,7 +160,11 @@ namespace EterniaCoop
             bool ok;
             try { ok = Extend(); }
             catch (Exception e) { ok = false; why = e.Message; }
-            if (ok) return;
+            if (ok) { fails = 0; return; }   // in a row: a stage that can't be continued fails every frame anyway
+            // A spell's own camera (mode 1/2): big spells cover the screen and the stage draws no ground meanwhile
+            // ("no quads drawn" for 24+ frames) - that says nothing about the stage. Counting it latched the camera to
+            // 720 for the rest of the battle after the first such spell.
+            if (Marshal.ReadByte(Native.At(Rva.CamMode)) != 0) return;
             if (++fails < FailLimit) return;
             failed = true;
             if (why != lastWhy && logged < 20)
