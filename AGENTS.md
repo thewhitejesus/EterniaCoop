@@ -203,6 +203,15 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
   any and the last frame wasn't paused (Formation and other battle submenus stop the frames too, but come from the
   paused battle menu), or when enemies stand again after a win. Testing several battles in a row on an early save:
   `[Debug] UnlockRoster` + `BotPlayers` (six characters win where three die); keyboard = player 1 for menus/field.
+- **Character records and learned artes (2.1.0, found 2026-11-18 for testing late-game spells on an early save).**
+  0xD0 bytes per character id from 1, starting 0x8F0 before the party list (`0x11CB3E0`): +0 id, +2 level, +4 EXP,
+  +8 EXP to next level, +0x34 max HP, +0x38 HP, +0x3A max TP, +0x3E TP; +0x7A the learned artes as a zero-ended list of
+  arte ids (the Skills screen counts its non-zero bytes when it opens). Arte ids follow Artes Renamer's config order:
+  Reid 0x01-0x18, Farah 0x19-0x2A, Craymel artes from 0x36 (Nurse 0x37, Spread 0x47), Ras 0x66-0x69, Chat 0x6A-0x6F
+  (Eternal Throw 0x6F; Six Person shows Chat's list by its own count, so adding to it didn't show). Huge EXP in memory
+  makes the next win run the game's own level-ups. "Retry Battle" restores the records from before the fight. Nurse
+  and other spell cameras are camera mode 2 for ~0.4 s. Debug build: `[Debug] HealParty` refills HP/TP outside battle;
+  bots also press L3/L2/R2 (Water's Overlimit/Artesphere).
 - **When a battle crashes, read the crash dump before blaming the mod** (`%TEMP%BANDAI NAMCO Entertainment...Crashes`,
   exception + CONTEXT streams), then compare the code in memory with the file: on 2.1.0 the crash was 100% Drop &
   Steal's NOPs at 2.0.0's `0x72382`, inside the Auto handler.

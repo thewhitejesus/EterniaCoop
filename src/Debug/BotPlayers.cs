@@ -1,6 +1,6 @@
 // Debug build only: [Debug] BotPlayers = n adds n virtual gamepads that play on their own, so co-op can be tested with
 // more players than there are people. In battle they run back and forth across the field (in opposite directions),
-// tapping attack and arte; while the battle is paused they let go, so they never touch a menu.
+// tapping attack and arte, now and then L3, L2 and R2; while the battle is paused they let go, so they never touch a menu.
 #if COOP_DEBUG
 using System.Collections.Generic;
 using BepInEx.Configuration;
@@ -45,6 +45,10 @@ namespace EterniaCoop
                     state = state.WithButton(right ? GamepadButton.DpadRight : GamepadButton.DpadLeft);
                     if (Mathf.Repeat(t + i * 0.3f, AttackEvery) < TapSeconds) state = state.WithButton(GamepadButton.South);
                     if (Mathf.Repeat(t + i * 1.1f, ArteEvery) < TapSeconds) state = state.WithButton(GamepadButton.East);
+                    // L3 (Water's Edition Overlimit), L2 and R2 (Artesphere pages, L2/R2 shortcuts) now and then.
+                    if (Mathf.Repeat(t + i * 0.7f, 5f) < TapSeconds) state = state.WithButton(GamepadButton.LeftStick);
+                    if (Mathf.Repeat(t + i * 0.9f, 4f) < 0.3f) state.leftTrigger = 1f;
+                    if (Mathf.Repeat(t + i * 0.9f + 2f, 4f) < 0.3f) state.rightTrigger = 1f;
                 }
                 InputSystem.QueueStateEvent(pads[i], state);
             }
