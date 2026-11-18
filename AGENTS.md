@@ -197,6 +197,12 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
   `[rcx + rsi + 0x12ceba4]`). `gen_sigs.py` wildcards displacements that are module offsets (`module_disp_offset`),
   not only RIP-relative ones - 2.1.0 broke TargetActor and TabConfirm that way. A function whose prologue changes
   (the command builder in 2.1.0) is better found through a site inside it: `Native.FunctionStart` walks `.pdata`.
+- **A new battle doesn't get a new actor list.** The battle actors stay at the same address from battle to battle (and a
+  retried one), so "the pointer changed" never fires after the first battle: 1.9.6 kept the camera handed back to the
+  game after the first win (CycloBig69). `CoopCamera` counts a new battle when battle frames resume after 3 s without
+  any and the last frame wasn't paused (Formation and other battle submenus stop the frames too, but come from the
+  paused battle menu), or when enemies stand again after a win. Testing several battles in a row on an early save:
+  `[Debug] UnlockRoster` + `BotPlayers` (six characters win where three die); keyboard = player 1 for menus/field.
 - **When a battle crashes, read the crash dump before blaming the mod** (`%TEMP%BANDAI NAMCO Entertainment...Crashes`,
   exception + CONTEXT streams), then compare the code in memory with the file: on 2.1.0 the crash was 100% Drop &
   Steal's NOPs at 2.0.0's `0x72382`, inside the Auto handler.

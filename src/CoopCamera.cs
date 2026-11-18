@@ -39,6 +39,8 @@ namespace EterniaCoop
         static IntPtr stub, active, centre;   // stub data: active (byte), centre x (ushort, world units = 1/16 px)
         static bool installed;
         static long lastActors;
+        static int lastTick;       // Environment.TickCount of the last battle frame (paused ones too)
+        static bool lastPaused;    // that frame was paused (battle menu)
         static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait, lastMid, leadVel;
         static bool tracking, resume, haveScroll;
         static short lastScroll;   // the camera's position on the previous frame
@@ -127,7 +129,7 @@ namespace EterniaCoop
         }
 
         // Battle thread, every frame while the battle menu is open (the camera isn't steered then, but it still moves).
-        public static void Paused() { if (installed) GuardSnap(); }
+        public static void Paused() { if (installed) { lastTick = Environment.TickCount; lastPaused = true; GuardSnap(); } }
 
         // Undoes the menu's snap to the leader (see the top). Only a jump of more than SnapLimit that lands on the
         // leader's spot (within one easing step) counts: the camera showing a spell's target, easing and the menu's
@@ -160,9 +162,22 @@ namespace EterniaCoop
             IntPtr actors = Battle.Actors();
             if (actors == IntPtr.Zero) { Marshal.WriteByte(active, 0); return; }
 
-            // New battle: start from the game's own camera.
-            if (actors.ToInt64() != lastActors)
+            // New battle: start from the game's own camera. The game keeps the actor list at the same address from battle to
+            // battle (1.9.6 kept the camera handed back to the game after the first win - reported by CycloBig69), so a new
+            // battle is also: enemies standing again after a win, or battle frames resuming after 3 s without any when
+            // the last one wasn't paused (a retried battle, or one after a fled/lost one). A battle submenu (Formation)
+            // stops the battle frames too, but it's reached from the battle menu: paused frames came last.
+            int tick = Environment.TickCount;
+            bool gap = unchecked(tick - lastTick) > 3000 && !lastPaused;
+            lastTick = tick;
+            lastPaused = false;
+            bool fresh = actors.ToInt64() != lastActors || (won && EnemyStanding(actors)) || gap;
+            if (fresh)
             {
+#if COOP_DEBUG
+                Plugin.Log.LogInfo("Camera: new battle, actors 0x" + actors.ToInt64().ToString("X") +
+                    (actors.ToInt64() == lastActors ? (gap ? " (same list, after a pause in battle frames)" : " (same list, enemies standing after a win)") : ""));
+#endif
                 lastActors = actors.ToInt64();
                 battleFrames = 0;
                 won = false;

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.7 - 2026-11-18
+- **The co-op camera works in every battle again, not just the first.** 1.9.6 hands the camera back to the game when
+  the last enemy falls (for a clean victory screen), and it only took it back when it saw a new battle - but the game
+  keeps its battle characters in the same place every battle, so after the first win the camera stayed centred for
+  the rest of the session. The mod now recognises a new battle by the battle starting up again. This also fixes the
+  camera steering a retried battle's opening. Thanks to CycloBig69 for the report.
+
 ## 1.9.6 - 2026-11-17
 - **Spells no longer zoom in on one character in co-op.** Some spells and artes (Nurse, Eternal Hammer) move the
   camera themselves and zoomed in close on player 1, leaving the other players off screen. While two or more play,
