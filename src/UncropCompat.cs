@@ -76,14 +76,24 @@ namespace EterniaCoop
         }
 
         static bool menuPanel;
+#if COOP_DEBUG
+        public static int washFrames;   // frames that looked like a menu while the battle ran (not paused)
+#endif
 
         // Before Uncrop's check: it empties the frame's batch list when it's done.
         static void BeforeStartRender()
         {
             try
             {
+                // Only while the battle is paused: menus open from the paused battle menu. A big spell's full-screen wash
+                // also makes whole-screen layers; taken for a menu, that frame went to Uncrop's own verdict, which zoomed
+                // out isn't "scene", and the wash was drawn across the whole 16:9 screen - grey or green side bars.
                 menuPanel = battleView && Native.Base != 0 && Battle.Actors() != IntPtr.Zero &&
                     System.Runtime.InteropServices.Marshal.ReadInt16(Native.At(Rva.ZoomNow)) > BattleGround.ZoomGameMax && MenuPanel();
+#if COOP_DEBUG
+                if (menuPanel && (System.Runtime.InteropServices.Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0) washFrames++;
+#endif
+                if (menuPanel && (System.Runtime.InteropServices.Marshal.ReadByte(Native.At(Rva.BattleFlags)) & 1) == 0) menuPanel = false;
             }
             catch { menuPanel = false; }
         }

@@ -115,7 +115,7 @@ namespace EterniaCoop
             if (now < nextLog) return;
             nextLog = now + 2f;
             if (firstError != null) { Plugin.Log.LogWarning("Uncrop probe error: " + firstError); firstError = ""; }
-            if (lines.Count == 0) { if (calls > 0 && UncropCompat.BattleView) Plugin.Log.LogInfo("Uncrop probe: " + calls + " batches seen, none logged (logging " + Logging() + ")."); calls = 0; return; }
+            if (lines.Count == 0) { if (calls > 0 && UncropCompat.BattleView) Plugin.Log.LogInfo("Uncrop probe: " + calls + " batches seen, none logged (logging " + Logging() + "), menu-like frames while running " + UncropCompat.washFrames + "."); calls = 0; return; }
             calls = 0;
             var sb = new StringBuilder("Uncrop probe (zoom " + Marshal.ReadInt16(Native.At(Rva.ZoomNow)) + "): ");
             foreach (string l in lines) sb.Append("\n  ").Append(l);

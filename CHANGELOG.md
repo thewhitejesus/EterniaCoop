@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- **No more coloured flashes in the side bars during big spells** (with Uncrop, zoomed out). Some spells wash the whole
+  screen in one colour (Dragon Swarm's whiteout, grey or green washes); zoomed out, the mod took those frames for a menu
+  window and let Uncrop draw them across the whole 16:9 screen. Menu windows only open while the battle is paused, so
+  only then does the mod check for one now. Thanks to thewhitejesus1 for spotting the green flashes.
+
 ## 1.9.8 - 2026-11-18
 - **Big spells no longer cut the co-op camera's zoom for the rest of the battle.** Screen-filling spells (Meteor Swarm,
   and others with their own camera) hide the stage's ground while they play; the ground extension counted every one of
