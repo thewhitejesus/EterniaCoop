@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+- **The victory pose is framed on the party again.** When the last enemy fell, the co-op camera froze where the fight
+  ended - often far to the right, where the enemies were - and the victory pose, which puts the party back in
+  formation around the leader, could end up off screen. The camera now glides to the leader for the pose. A win by a
+  spell also keeps the game's zoom while the spell's camera finishes. Thanks to TenshioftheRain for the report.
+
 ## 1.9.9 - 2026-11-19
 - **No more coloured flashes in the side bars during big spells** (with Uncrop, zoomed out). Some spells wash the whole
   screen in one colour (Dragon Swarm's whiteout, grey or green washes); zoomed out, the mod took those frames for a menu

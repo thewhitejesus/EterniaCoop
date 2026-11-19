@@ -44,6 +44,9 @@ namespace EterniaCoop
         static float zoom, x, baseZoom, zoomVel, xVel, lastSpread, zoomInWait, lastMid, leadVel;
         static bool tracking, resume, haveScroll;
         static short lastScroll;   // the camera's position on the previous frame
+#if COOP_DEBUG
+        static long victoryLog;
+#endif
         static short written;      // the zoom we last wrote into the game's setting (0: none / handed back)
 
         // FUN_D6420, the game's own scroll function (x -> clamped scroll), called right after CamTargetX.
@@ -203,7 +206,37 @@ namespace EterniaCoop
 #if COOP_DEBUG
             handBack = !UncropProbe.SkipVictoryZoom.Value;
 #endif
-            if (won) return;
+            if (won)
+            {
+                // The victory pose puts the party back into formation around the leader (actor 0, whom the game's camera
+                // follows), wherever the fight ended. A centre frozen at the last kill - often far right, where the
+                // enemies were - left the pose off screen (TenshioftheRain: "goes farther to the right with every
+                // battle"). Ease toward the leader instead: no jump, and the pose ends up framed as in the game.
+                int c = Marshal.ReadInt16(centre), poseX = Marshal.ReadInt16(actors, Actor.X);
+                int step = (poseX - c) / 4;
+                Marshal.WriteInt16(centre, (short)(Math.Abs(poseX - c) < 16 ? poseX : c + step));
+                // Won by a spell: its camera (mode 1) goes on driving the zoom and undid the one-time hand-back - the
+                // victory began zoomed out for a second or two (with Uncrop, the green flicker 1.9.6 fixed). Keep the
+                // game's zoom while it plays; the victory pose's own scripted camera (mode 2+) is left alone.
+                if (Marshal.ReadByte(Native.At(Rva.CamMode)) == 1)
+                {
+                    short z = (short)Math.Round(baseZoom);
+                    if (zoomTarget != IntPtr.Zero) Marshal.WriteInt16(zoomTarget, z);
+                    Marshal.WriteInt16(Native.At(Rva.ZoomNow), z);
+                }
+#if COOP_DEBUG
+                long ts = System.Diagnostics.Stopwatch.GetTimestamp();
+                if (ts - victoryLog > System.Diagnostics.Stopwatch.Frequency)
+                {
+                    victoryLog = ts;
+                    Plugin.Log.LogInfo("Victory: active " + Marshal.ReadByte(active) + " centre " + Marshal.ReadInt16(centre) / 16 +
+                        " leader x " + Marshal.ReadInt16(actors, Actor.X) / 16 + " scroll " + Marshal.ReadInt16(Native.At(Rva.CamScrollNow)) +
+                        " -> " + Marshal.ReadInt16(Native.At(Rva.CamScroll)) + " mode " + Marshal.ReadByte(Native.At(Rva.CamMode)) +
+                        " zoom " + Marshal.ReadInt16(Native.At(Rva.ZoomNow)));
+                }
+#endif
+                return;
+            }
             if (handBack && tracking && !EnemyStanding(actors))
             {
                 // The centre stays where it is (active): handing the position to the game made it jump to the leader
