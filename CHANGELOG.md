@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.0 - 2026-11-19
 - **The victory pose is framed on the party again.** When the last enemy fell, the co-op camera froze where the fight
   ended - often far to the right, where the enemies were - and the victory pose, which puts the party back in
   formation around the leader, could end up off screen. The camera now glides to the leader for the pose. A win by a
