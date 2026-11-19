@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.9.9 - 2026-11-19
 - **No more coloured flashes in the side bars during big spells** (with Uncrop, zoomed out). Some spells wash the whole
   screen in one colour (Dragon Swarm's whiteout, grey or green washes); zoomed out, the mod took those frames for a menu
   window and let Uncrop draw them across the whole 16:9 screen. Menu windows only open while the battle is paused, so
