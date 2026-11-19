@@ -45,16 +45,35 @@ namespace EterniaCoop
                 if (block < 0 && victim != IntPtr.Zero) block = Battle.BlockOf(victim);
                 int slot = block == 0 ? 0 : CharacterChoice.InputOfBlock(block);
                 if (slot >= 1 && slot <= 3 && Players.HasDevice[slot]) pending[slot] = Strength;
+#if COOP_DEBUG
+                if (block >= 0 && block < 6 && slot >= 0 && slot <= 3) debugHits[block * 4 + slot]++;
+#endif
             }
             catch { }
         }
 
         static System.Reflection.MethodInfo setVibration, stopVibration;   // UgxInputManager's, looked up once
+#if COOP_DEBUG
+        // Hits that asked for rumble, by command block and the input player it went to (block * 4 + input); input 0 is
+        // the game's own rumble (player 1's controller, or the leader's chooser with character choice).
+        static readonly int[] debugHits = new int[24];
+        static float debugNext;
+#endif
 
         // Main thread, every frame.
         public static void Update(float seconds)
         {
             if (Players.InputManager == null) return;
+#if COOP_DEBUG
+            if (Time.unscaledTime >= debugNext)
+            {
+                debugNext = Time.unscaledTime + 5f;
+                var sb = new System.Text.StringBuilder();
+                for (int i = 0; i < debugHits.Length; i++)
+                    if (debugHits[i] > 0) { sb.Append(" block ").Append(i / 4).Append("->input ").Append(i % 4).Append(" x").Append(debugHits[i]); debugHits[i] = 0; }
+                if (sb.Length > 0) Plugin.Log.LogInfo("Rumble (5 s):" + sb + "; devices " + Players.HasDevice[0] + "," + Players.HasDevice[1] + "," + Players.HasDevice[2] + "," + Players.HasDevice[3]);
+            }
+#endif
             for (int p = 1; p < 4; p++)
             {
                 if (pending[p] > 0)

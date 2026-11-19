@@ -212,7 +212,7 @@ Actor fields: `+0x10` x, `+0x12` y (world units = 1/16 PS1 pixel; battle view is
   the next win run the game's own level-ups; the cap is level 250 at 20,000,000 EXP (no per-level table: a formula).
   Debug build: `[Debug] MaxLevels`, `UnlockArtes`, `ExtraArtes` (hex ids per character) do this outside battle. "Retry Battle" restores the records from before the fight. Nurse
   and other spell cameras are camera mode 2 for ~0.4 s. Debug build: `[Debug] HealParty` refills HP/TP outside battle;
-  bots also press L3/L2/R2 (Water's Overlimit/Artesphere).
+  bots also press L3/L2/R2 (Water's Overlimit/Artesphere). `[Debug] BotDropCycle` unplugs bot 1 for 10 s of every 40 (drop-out/rejoin: the slot goes Auto mid-battle and back); the debug build logs rumble per command block -> input player every 5 s. Tested 2026-11-19: drop-out/rejoin, rumble routing, 60 FPS with six characters + Uncrop + Six Person, Water's Overlimit check reading player 4's L3 on Farah (Water's mages have an EX gauge, no Overlimit).
 - **When a battle crashes, read the crash dump before blaming the mod** (`%TEMP%BANDAI NAMCO Entertainment...Crashes`,
   exception + CONTEXT streams), then compare the code in memory with the file: on 2.1.0 the crash was 100% Drop &
   Steal's NOPs at 2.0.0's `0x72382`, inside the Auto handler.
